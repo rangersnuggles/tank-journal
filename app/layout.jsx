@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Tank Journal",
+  title: "75g Tank Journal",
   description: "Freshwater planted aquarium log",
 };
 

@@ -486,7 +486,7 @@ export default function TankJournal() {
           <div style={{ marginBottom: "32px" }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
               <div>
-                <h1 style={{ fontFamily: "'Lora', serif", fontSize: "26px", fontWeight: 400, color: "#0f172a", margin: "0 0 3px", letterSpacing: "-0.02em" }}>Tank Journal</h1>
+                <h1 style={{ fontFamily: "'Lora', serif", fontSize: "26px", fontWeight: 400, color: "#0f172a", margin: "0 0 3px", letterSpacing: "-0.02em" }}>75g Tank Journal</h1>
                 <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#94a3b8", margin: 0 }}>
                   Freshwater planted · {entries.length} entries
                   {medOpen.length > 0 && <span style={{ marginLeft: "8px", color: "#dc2626", fontWeight: 500 }}>· {medOpen.length} in treatment</span>}

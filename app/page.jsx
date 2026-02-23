@@ -20,7 +20,7 @@ const PARAMS = [
   { key: "kh",      label: "KH",    unit: "°dH" },
 ];
 
-const CHANGE_TYPES        = ["Added","Removed","Trimmed","Died","Moved","Fertilized","Water change"];
+const CHANGE_TYPES        = ["Added","Removed","Trimmed","Died","Moved","Fertilized"];
 const REMOVE_CHANGE_TYPES = ["Removed","Died","Moved"];
 const OUTCOMES            = ["","Recovered — returned to display","Still in treatment","Died","Other"];
 
@@ -137,6 +137,17 @@ function EntryCard({ entry, onDelete }) {
         {entry.type === "parameters" && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: entry.note ? "7px" : 0 }}>
             {PARAMS.map(p => d[p.key] ? <ParamBadge key={p.key} label={p.label} value={d[p.key]} unit={p.unit} /> : null)}
+            {d.waterChange && (
+              <span style={{
+                display: "inline-flex", alignItems: "baseline", gap: "2px",
+                background: "#f0fdf4", border: "1px solid #86efac",
+                borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
+                fontFamily: "'Courier New', monospace", color: "#166534",
+              }}>
+                <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em" }}>WC</span>
+                <span style={{ fontWeight: 600, marginLeft: "3px" }}>{d.waterChangePct}%</span>
+              </span>
+            )}
           </div>
         )}
 
@@ -236,13 +247,37 @@ function InhabitantForm({ initial, onSave, onCancel, saving }) {
 
 function ParametersForm({ data, setData }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))", gap: "8px" }}>
-      {PARAMS.map(p => (
-        <label key={p.key} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-          <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em", fontFamily: "'DM Sans', sans-serif" }}>{p.label}{p.unit ? ` (${p.unit})` : ""}</span>
-          <input type="text" inputMode="decimal" placeholder="—" value={data[p.key] || ""} onChange={e => setData({ ...data, [p.key]: e.target.value })} style={inputStyle} />
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(88px, 1fr))", gap: "8px" }}>
+        {PARAMS.map(p => (
+          <label key={p.key} style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+            <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em", fontFamily: "'DM Sans', sans-serif" }}>{p.label}{p.unit ? ` (${p.unit})` : ""}</span>
+            <input type="text" inputMode="decimal" placeholder="—" value={data[p.key] || ""} onChange={e => setData({ ...data, [p.key]: e.target.value })} style={inputStyle} />
+          </label>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "4px", borderTop: "1px solid #f1f5f9" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#475569" }}>
+          <input
+            type="checkbox"
+            checked={!!data.waterChange}
+            onChange={e => setData({ ...data, waterChange: e.target.checked, waterChangePct: e.target.checked ? (data.waterChangePct || "20") : "" })}
+            style={{ width: "14px", height: "14px", accentColor: "#0891b2", cursor: "pointer" }}
+          />
+          Water change
         </label>
-      ))}
+        {data.waterChange && (
+          <select
+            value={data.waterChangePct || "20"}
+            onChange={e => setData({ ...data, waterChangePct: e.target.value })}
+            style={{ ...inputStyle, width: "90px" }}
+          >
+            {[10,20,30,40,50,60,70,80,90,100].map(p => (
+              <option key={p} value={p}>{p}%</option>
+            ))}
+          </select>
+        )}
+      </div>
     </div>
   );
 }

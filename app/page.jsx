@@ -140,11 +140,11 @@ function EntryCard({ entry, onDelete }) {
             {d.waterChange && (
               <span style={{
                 display: "inline-flex", alignItems: "baseline", gap: "2px",
-                background: "#f0fdf4", border: "1px solid #86efac",
+                background: "#f0f9ff", border: "1px solid #bae6fd",
                 borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
-                fontFamily: "'Courier New', monospace", color: "#166534",
+                fontFamily: "'Courier New', monospace", color: "#0c4a6e",
               }}>
-                <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em" }}>WC</span>
+                <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em" }}>Water Change</span>
                 <span style={{ fontWeight: 600, marginLeft: "3px" }}>{d.waterChangePct}%</span>
               </span>
             )}

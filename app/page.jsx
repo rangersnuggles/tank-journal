@@ -96,10 +96,35 @@ function MedicalDetail({ label, value }) {
   );
 }
 
-function EntryCard({ entry, onDelete }) {
+function EntryCard({ entry, onDelete, onEdit }) {
   const type      = ENTRY_TYPES[entry.type];
   const isMedical = entry.type === "medical";
   const d         = entry.data || {};
+
+  const [editing,   setEditing]   = useState(false);
+  const [editDate,  setEditDate]  = useState(entry.date);
+  const [editTime,  setEditTime]  = useState(entry.time);
+  const [editData,  setEditData]  = useState(entry.data || {});
+  const [editNote,  setEditNote]  = useState(entry.note || "");
+  const [saving,    setSaving]    = useState(false);
+
+  function openEdit() {
+    setEditDate(entry.date);
+    setEditTime(entry.time);
+    setEditData(entry.data || {});
+    setEditNote(entry.note || "");
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    setSaving(true);
+    try {
+      await onEdit(entry.id, { date: editDate, time: editTime, data: editData, note: editNote });
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div style={{
@@ -127,57 +152,96 @@ function EntryCard({ entry, onDelete }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "7px" }}>
           <div>
             <span style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: type.color }}>{type.label}</span>
-            <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "8px", fontFamily: "'DM Sans', sans-serif" }}>
+            <span
+              onClick={openEdit}
+              title="Click to edit"
+              style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "8px", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}
+            >
               {fmtDate(entry.date)} · {entry.time}
             </span>
           </div>
           <button onClick={() => onDelete(entry.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", fontSize: "14px", padding: "0 0 0 8px", lineHeight: 1 }}>×</button>
         </div>
 
-        {entry.type === "parameters" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: entry.note ? "7px" : 0 }}>
-            {PARAMS.map(p => d[p.key] ? <ParamBadge key={p.key} label={p.label} value={d[p.key]} unit={p.unit} /> : null)}
-            {d.waterChange && (
-              <span style={{
-                display: "inline-flex", alignItems: "baseline", gap: "2px",
-                background: "#f0f9ff", border: "1px solid #bae6fd",
-                borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
-                fontFamily: "'Courier New', monospace", color: "#0c4a6e",
-              }}>
-                <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em" }}>Water Change</span>
-                <span style={{ fontWeight: 600, marginLeft: "3px" }}>{d.waterChangePct}%</span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {entry.type === "changes" && d.changeType && (
-          <div style={{ fontSize: "13px", color: "#334155", marginBottom: entry.note ? "7px" : 0, fontFamily: "'DM Sans', sans-serif" }}>
-            <span style={{ background: "#f0fdf4", color: "#15803d", padding: "1px 7px", borderRadius: "3px", fontSize: "11px", fontWeight: 600, marginRight: "8px" }}>{d.changeType}</span>
-            {d.subject}
-            {d.quantity && <span style={{ color: "#94a3b8" }}> × {d.quantity}</span>}
-          </div>
-        )}
-
-        {entry.type === "medical" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: entry.note ? "10px" : 0 }}>
-            <div style={{ fontSize: "13px", fontWeight: 500, color: "#1e293b", fontFamily: "'DM Sans', sans-serif", marginBottom: "4px" }}>
-              {d.fish}
-              {d.count && d.count !== "1" && <span style={{ color: "#94a3b8", fontWeight: 400 }}> × {d.count}</span>}
+        {editing ? (
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "14px", marginBottom: "4px" }}>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: "3px", flex: 1 }}>
+                <span style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif" }}>Date</span>
+                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} style={inputStyle} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: "3px", width: "90px" }}>
+                <span style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif" }}>Time</span>
+                <input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} style={inputStyle} />
+              </label>
             </div>
-            <MedicalDetail label="Symptoms"  value={d.symptoms}  />
-            <MedicalDetail label="Treatment" value={d.treatment} />
-            {(d.dateIn || d.dateOut) && (
-              <MedicalDetail label="Hospital" value={[
-                d.dateIn  && `In: ${fmtDate(d.dateIn)}`,
-                d.dateOut && `Out: ${fmtDate(d.dateOut)}`,
-              ].filter(Boolean).join("  ·  ")} />
-            )}
-            {d.outcome && <div style={{ marginTop: "4px" }}><OutcomePill outcome={d.outcome} /></div>}
+            <div style={{ marginBottom: "10px" }}>
+              {entry.type === "parameters" && <ParametersForm data={editData} setData={setEditData} />}
+              {entry.type === "changes"    && <ChangesForm    data={editData} setData={setEditData} />}
+              {entry.type === "medical"    && <MedicalForm    data={editData} setData={setEditData} inhabitants={[]} />}
+            </div>
+            <label style={{ display: "flex", flexDirection: "column", gap: "3px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif" }}>Notes</span>
+              <textarea rows={2} value={editNote} onChange={e => setEditNote(e.target.value)} style={{ ...inputStyle, resize: "vertical", lineHeight: "1.5" }} />
+            </label>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button onClick={() => setEditing(false)} style={{ background: "none", border: "1px solid #e2e8f0", borderRadius: "5px", padding: "5px 12px", fontSize: "12px", color: "#64748b", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
+              <button onClick={saveEdit} disabled={saving} style={{ background: type.color, border: "none", borderRadius: "5px", padding: "5px 12px", fontSize: "12px", color: "#fff", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", opacity: saving ? 0.6 : 1 }}>{saving ? "Saving…" : "Save"}</button>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            {entry.type === "parameters" && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: entry.note ? "7px" : 0 }}>
+                {PARAMS.map(p => d[p.key] ? <ParamBadge key={p.key} label={p.label} value={d[p.key]} unit={p.unit} /> : null)}
+                {d.waterChange && (
+                  <span style={{
+                    display: "inline-flex", alignItems: "baseline", gap: "2px",
+                    background: "#f0f9ff", border: "1px solid #bae6fd",
+                    borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
+                    fontFamily: "'Courier New', monospace", color: "#0c4a6e",
+                  }}>
+                    <span style={{ fontSize: "10px", color: "#64748b", letterSpacing: "0.05em" }}>Water Change</span>
+                    <span style={{ fontWeight: 600, marginLeft: "3px" }}>{d.waterChangePct}%</span>
+                  </span>
+                )}
+              </div>
+            )}
 
-        {entry.note && <p style={{ margin: 0, fontSize: "13px", color: "#475569", lineHeight: "1.6", fontFamily: "'DM Sans', sans-serif" }}>{entry.note}</p>}
+            {entry.type === "changes" && d.changeType && (
+              <div style={{ fontSize: "13px", color: "#334155", marginBottom: entry.note ? "7px" : 0, fontFamily: "'DM Sans', sans-serif" }}>
+                {d.changeType === "Died" && <span style={{ marginRight: "4px", fontSize: "11px" }}>🪦</span>}
+                <span style={{
+                  background: d.changeType === "Died" ? "#e5e7eb" : "#f0fdf4",
+                  color: d.changeType === "Died" ? "#1f2937" : "#15803d",
+                  padding: "1px 7px", borderRadius: "3px", fontSize: "11px", fontWeight: 600, marginRight: "8px",
+                }}>{d.changeType}</span>
+                {d.subject}
+                {d.quantity && <span style={{ color: "#94a3b8" }}> × {d.quantity}</span>}
+              </div>
+            )}
+
+            {entry.type === "medical" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: entry.note ? "10px" : 0 }}>
+                <div style={{ fontSize: "13px", fontWeight: 500, color: "#1e293b", fontFamily: "'DM Sans', sans-serif", marginBottom: "4px" }}>
+                  {d.fish}
+                  {d.count && d.count !== "1" && <span style={{ color: "#94a3b8", fontWeight: 400 }}> × {d.count}</span>}
+                </div>
+                <MedicalDetail label="Symptoms"  value={d.symptoms}  />
+                <MedicalDetail label="Treatment" value={d.treatment} />
+                {(d.dateIn || d.dateOut) && (
+                  <MedicalDetail label="Hospital" value={[
+                    d.dateIn  && `In: ${fmtDate(d.dateIn)}`,
+                    d.dateOut && `Out: ${fmtDate(d.dateOut)}`,
+                  ].filter(Boolean).join("  ·  ")} />
+                )}
+                {d.outcome && <div style={{ marginTop: "4px" }}><OutcomePill outcome={d.outcome} /></div>}
+              </div>
+            )}
+
+            {entry.note && <p style={{ margin: 0, fontSize: "13px", color: "#475569", lineHeight: "1.6", fontFamily: "'DM Sans', sans-serif" }}>{entry.note}</p>}
+          </>
+        )}
       </div>
     </div>
   );
@@ -462,6 +526,12 @@ export default function TankJournal() {
     }
   };
 
+  // ── Edit entry ──
+  const updateEntry = async (id, patch) => {
+    const updated = await apiFetch(`/api/entries/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    setEntries(prev => prev.map(e => e.id === id ? updated : e));
+  };
+
   // ── Inhabitants CRUD ──
   const addInhabitant = async (data) => {
     setSavingInh(true);
@@ -614,7 +684,7 @@ export default function TankJournal() {
             {!loading && filtered.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 0", color: "#cbd5e1", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>No entries yet.</div>
             )}
-            {filtered.map(entry => <EntryCard key={entry.id} entry={entry} onDelete={deleteEntry} />)}
+            {filtered.map(entry => <EntryCard key={entry.id} entry={entry} onDelete={deleteEntry} onEdit={updateEntry} />)}
           </div>
         </div>
 

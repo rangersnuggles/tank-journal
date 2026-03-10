@@ -8,6 +8,13 @@ const ENTRY_TYPES = {
   changes:      { label: "Plant / Livestock", color: "#059669", icon: "⬡" },
   observations: { label: "Observation",       color: "#7c3aed", icon: "◈" },
   medical:      { label: "Medical",           color: "#dc2626", icon: "✚" },
+  co2:          { label: "CO₂",              color: "#d97706", icon: "◉" },
+};
+
+const DROP_CHECKER_MAP = {
+  blue:       { label: "Blue — too low",   bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
+  lime_green: { label: "Lime — ideal",     bg: "#f7fee7", border: "#bbf7d0", color: "#15803d" },
+  yellow:     { label: "Yellow — too high",bg: "#fefce8", border: "#fef08a", color: "#a16207" },
 };
 
 const PARAMS = [
@@ -179,6 +186,7 @@ function EntryCard({ entry, onDelete, onEdit }) {
               {entry.type === "parameters" && <ParametersForm data={editData} setData={setEditData} />}
               {entry.type === "changes"    && <ChangesForm    data={editData} setData={setEditData} />}
               {entry.type === "medical"    && <MedicalForm    data={editData} setData={setEditData} inhabitants={[]} />}
+              {entry.type === "co2"        && <Co2Form        data={editData} setData={setEditData} />}
             </div>
             <label style={{ display: "flex", flexDirection: "column", gap: "3px", marginBottom: "12px" }}>
               <span style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif" }}>Notes</span>
@@ -236,6 +244,56 @@ function EntryCard({ entry, onDelete, onEdit }) {
                   ].filter(Boolean).join("  ·  ")} />
                 )}
                 {d.outcome && <div style={{ marginTop: "4px" }}><OutcomePill outcome={d.outcome} /></div>}
+              </div>
+            )}
+
+            {entry.type === "co2" && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", alignItems: "center", marginBottom: entry.note ? "7px" : 0 }}>
+                {d.status && d.status !== "unchanged" && (
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: "5px",
+                    background: d.status === "on" ? "#f0fdf4" : "#fef2f2",
+                    border: `1px solid ${d.status === "on" ? "#86efac" : "#fca5a5"}`,
+                    borderRadius: "4px", padding: "2px 8px", fontSize: "11px", fontWeight: 700,
+                    color: d.status === "on" ? "#15803d" : "#b91c1c",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: d.status === "on" ? "#22c55e" : "#ef4444", flexShrink: 0 }} />
+                    CO₂ {d.status.toUpperCase()}
+                  </span>
+                )}
+                {d.status === "unchanged" && (
+                  <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "'DM Sans', sans-serif" }}>Settings update</span>
+                )}
+                {d.bubbleRate && (
+                  <span style={{
+                    background: "#fff7ed", border: "1px solid #fed7aa",
+                    borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
+                    fontFamily: "'Courier New', monospace", color: "#9a3412",
+                  }}>
+                    <span style={{ color: "#94a3b8", fontSize: "10px" }}>rate </span>{d.bubbleRate} bps
+                  </span>
+                )}
+                {d.dropChecker && DROP_CHECKER_MAP[d.dropChecker] && (
+                  <span style={{
+                    background: DROP_CHECKER_MAP[d.dropChecker].bg,
+                    border: `1px solid ${DROP_CHECKER_MAP[d.dropChecker].border}`,
+                    borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
+                    fontFamily: "'DM Sans', sans-serif",
+                    color: DROP_CHECKER_MAP[d.dropChecker].color,
+                  }}>
+                    ◉ {DROP_CHECKER_MAP[d.dropChecker].label}
+                  </span>
+                )}
+                {(d.timerHours || d.timerStart) && (
+                  <span style={{
+                    background: "#f8fafc", border: "1px solid #e2e8f0",
+                    borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
+                    fontFamily: "'DM Sans', sans-serif", color: "#64748b",
+                  }}>
+                    ⏱ {d.timerHours && `${d.timerHours}h/day`}{d.timerStart && ` · ${d.timerStart}–${d.timerStop || "?"}`}
+                  </span>
+                )}
               </div>
             )}
 
@@ -415,6 +473,79 @@ function MedicalForm({ data, setData, inhabitants }) {
   );
 }
 
+function Co2Form({ data, setData }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+
+      <div>
+        <div style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif", marginBottom: "6px" }}>CO₂ Status</div>
+        <div style={{ display: "flex", gap: "6px" }}>
+          {[["on","On","#059669"],["off","Off","#dc2626"],["unchanged","No change","#64748b"]].map(([val, label, color]) => (
+            <button key={val} type="button" onClick={() => setData({ ...data, status: val })} style={{
+              padding: "5px 12px", borderRadius: "5px", fontSize: "12px", border: "1px solid",
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              background: data.status === val ? color : "transparent",
+              color: data.status === val ? "#fff" : "#64748b",
+              borderColor: data.status === val ? color : "#e2e8f0",
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+        <span style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif" }}>Bubble rate (bubbles/sec)</span>
+        <input type="text" inputMode="decimal" placeholder="e.g. 2" value={data.bubbleRate || ""}
+          onChange={e => setData({ ...data, bubbleRate: e.target.value })}
+          style={{ ...inputStyle, maxWidth: "120px" }} />
+      </label>
+
+      <div>
+        <div style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif", marginBottom: "6px" }}>Drop checker color</div>
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          {Object.entries(DROP_CHECKER_MAP).map(([val, { label, color }]) => (
+            <button key={val} type="button"
+              onClick={() => setData({ ...data, dropChecker: data.dropChecker === val ? "" : val })}
+              style={{
+                padding: "5px 12px", borderRadius: "5px", fontSize: "12px", border: "1px solid",
+                cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                background: data.dropChecker === val ? color : "transparent",
+                color: data.dropChecker === val ? "#fff" : "#64748b",
+                borderColor: data.dropChecker === val ? color : "#e2e8f0",
+              }}>{label.split(" — ")[0]}</button>
+          ))}
+        </div>
+        {data.dropChecker && (
+          <div style={{ fontSize: "11px", color: DROP_CHECKER_MAP[data.dropChecker]?.color, fontFamily: "'DM Sans', sans-serif", marginTop: "5px" }}>
+            {DROP_CHECKER_MAP[data.dropChecker]?.label}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div style={{ fontSize: "10px", color: "#64748b", fontFamily: "'DM Sans', sans-serif", marginBottom: "6px" }}>Timer schedule</div>
+        <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: "8px" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+            <span style={{ fontSize: "10px", color: "#94a3b8", fontFamily: "'DM Sans', sans-serif" }}>Hours/day</span>
+            <input type="text" inputMode="decimal" placeholder="8" value={data.timerHours || ""}
+              onChange={e => setData({ ...data, timerHours: e.target.value })} style={inputStyle} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+            <span style={{ fontSize: "10px", color: "#94a3b8", fontFamily: "'DM Sans', sans-serif" }}>On time</span>
+            <input type="time" value={data.timerStart || ""}
+              onChange={e => setData({ ...data, timerStart: e.target.value })} style={inputStyle} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+            <span style={{ fontSize: "10px", color: "#94a3b8", fontFamily: "'DM Sans', sans-serif" }}>Off time</span>
+            <input type="time" value={data.timerStop || ""}
+              onChange={e => setData({ ...data, timerStop: e.target.value })} style={inputStyle} />
+          </label>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const todayStr  = new Date().toISOString().split("T")[0];
@@ -488,6 +619,7 @@ export default function TankJournal() {
     if (activeType === "changes" && !formData.changeType) return;
     if (activeType === "observations" && !note.trim()) return;
     if (activeType === "medical" && !formData.fish) return;
+    if (activeType === "co2" && !formData.status && !formData.bubbleRate && !formData.dropChecker && !note.trim()) return;
 
     setSaving(true);
     try {
@@ -564,6 +696,24 @@ export default function TankJournal() {
   const totalCount = inhabitants.reduce((s, i) => s + (i.count ?? 1), 0);
   const medOpen    = entries.filter(e => e.type === "medical" && e.data?.outcome === "Still in treatment");
 
+  // Derive current CO2 state from most-recent values across all co2 entries
+  const co2State = (() => {
+    const co2Entries = entries.filter(e => e.type === "co2");
+    if (co2Entries.length === 0) return null;
+    let status = null, bubbleRate = null, dropChecker = null, timerHours = null, timerStart = null, timerStop = null;
+    for (const e of co2Entries) {
+      const d = e.data || {};
+      if (!status      && d.status && d.status !== "unchanged") status      = d.status;
+      if (!bubbleRate  && d.bubbleRate)   bubbleRate  = d.bubbleRate;
+      if (!dropChecker && d.dropChecker)  dropChecker = d.dropChecker;
+      if (!timerHours  && d.timerHours)   timerHours  = d.timerHours;
+      if (!timerStart  && d.timerStart)   timerStart  = d.timerStart;
+      if (!timerStop   && d.timerStop)    timerStop   = d.timerStop;
+      if (status && bubbleRate && dropChecker && timerHours) break;
+    }
+    return { status, bubbleRate, dropChecker, timerHours, timerStart, timerStop };
+  })();
+
   return (
     <div style={{ minHeight: "100vh", background: "#fff", fontFamily: "'Georgia', serif" }}>
       <style>{`
@@ -636,6 +786,7 @@ export default function TankJournal() {
                 {activeType === "parameters"   && <ParametersForm data={formData} setData={setFormData} />}
                 {activeType === "changes"      && <ChangesForm    data={formData} setData={setFormData} />}
                 {activeType === "medical"      && <MedicalForm    data={formData} setData={setFormData} inhabitants={inhabitants} />}
+                {activeType === "co2"          && <Co2Form        data={formData} setData={setFormData} />}
               </div>
 
               <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
@@ -690,6 +841,56 @@ export default function TankJournal() {
 
         {/* ── Sidebar ── */}
         <div style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px" }}>
+
+          {/* ── CO2 Status ── */}
+          <div style={{ background: "#fafafa", border: "1px solid #f1f5f9", borderRadius: "12px", padding: "14px 18px", marginBottom: "12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: co2State ? "10px" : 0 }}>
+              <div style={{ fontFamily: "'Lora', serif", fontSize: "15px", color: "#0f172a", fontWeight: 400 }}>CO₂</div>
+              {co2State?.status ? (
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "5px",
+                  background: co2State.status === "on" ? "#f0fdf4" : "#fef2f2",
+                  border: `1px solid ${co2State.status === "on" ? "#86efac" : "#fca5a5"}`,
+                  borderRadius: "4px", padding: "2px 8px", fontSize: "10px", fontWeight: 700,
+                  color: co2State.status === "on" ? "#15803d" : "#b91c1c",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>
+                  <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: co2State.status === "on" ? "#22c55e" : "#ef4444" }} />
+                  {co2State.status.toUpperCase()}
+                </span>
+              ) : (
+                <span style={{ fontSize: "10px", color: "#cbd5e1", fontFamily: "'DM Sans', sans-serif" }}>unknown</span>
+              )}
+            </div>
+            {co2State ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                {co2State.bubbleRate && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#94a3b8" }}>Bubble rate</span>
+                    <span style={{ color: "#334155" }}>{co2State.bubbleRate} bps</span>
+                  </div>
+                )}
+                {co2State.dropChecker && DROP_CHECKER_MAP[co2State.dropChecker] && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#94a3b8" }}>Drop checker</span>
+                    <span style={{ color: DROP_CHECKER_MAP[co2State.dropChecker].color, fontWeight: 500 }}>
+                      {DROP_CHECKER_MAP[co2State.dropChecker].label.split(" — ")[0]}
+                    </span>
+                  </div>
+                )}
+                {co2State.timerHours && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#94a3b8" }}>Timer</span>
+                    <span style={{ color: "#334155" }}>
+                      {co2State.timerHours}h/day{co2State.timerStart ? ` · ${co2State.timerStart}–${co2State.timerStop || "?"}` : ""}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: "12px", color: "#cbd5e1", fontFamily: "'DM Sans', sans-serif", marginTop: "6px" }}>No CO₂ data yet</div>
+            )}
+          </div>
 
           {medOpen.length > 0 && (
             <div style={{ background: "#fff5f5", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 14px", marginBottom: "12px", animation: "fadeIn 0.3s ease" }}>

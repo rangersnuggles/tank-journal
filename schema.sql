@@ -14,7 +14,7 @@ create table inhabitants (
 
 create table entries (
   id          bigint generated always as identity primary key,
-  type        text not null check (type in ('parameters','changes','observations','medical')),
+  type        text not null check (type in ('parameters','changes','observations','medical','co2')),
   date        date not null,
   time        text not null,
   data        jsonb not null default '{}',
@@ -33,3 +33,11 @@ alter table entries     enable row level security;
 -- Swap these for auth-based policies if you ever add login.
 create policy "allow all" on inhabitants for all using (true) with check (true);
 create policy "allow all" on entries     for all using (true) with check (true);
+
+-- ─────────────────────────────────────────
+-- Migration: add 'co2' entry type
+-- Run this if your database was created before CO2 tracking was added.
+-- ─────────────────────────────────────────
+-- alter table entries drop constraint entries_type_check;
+-- alter table entries add constraint entries_type_check
+--   check (type in ('parameters','changes','observations','medical','co2'));

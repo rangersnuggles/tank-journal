@@ -35,6 +35,23 @@ create policy "allow all" on inhabitants for all using (true) with check (true);
 create policy "allow all" on entries     for all using (true) with check (true);
 
 -- ─────────────────────────────────────────
+-- GitHub Commit Dashboard — Snapshot Cache
+-- ─────────────────────────────────────────
+
+create table github_snapshots (
+  id         uuid default gen_random_uuid() primary key,
+  fetched_at timestamptz default now(),
+  account    text not null,
+  commits    jsonb not null
+);
+
+-- Index for fast recency lookups
+create index github_snapshots_fetched_at_idx on github_snapshots (account, fetched_at desc);
+
+alter table github_snapshots enable row level security;
+create policy "allow all" on github_snapshots for all using (true) with check (true);
+
+-- ─────────────────────────────────────────
 -- Migration: add 'co2' entry type
 -- Run this if your database was created before CO2 tracking was added.
 -- ─────────────────────────────────────────

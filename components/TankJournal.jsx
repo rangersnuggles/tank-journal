@@ -731,7 +731,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
 
       {readOnly && (
         <div style={{ background: "#f0f9ff", borderBottom: "1px solid #bae6fd", padding: "9px 24px", fontSize: "12px", color: "#0369a1", fontFamily: "'DM Sans', sans-serif" }}>
-          <span style={{ fontFamily: "'VT323', monospace", fontSize: "16px" }}>Aqua Slog</span> — Viewing <strong>{tank?.name}</strong>{tank?.user_display_name ? ` by ${tank.user_display_name}` : ""} — read only
+          <span style={{ fontFamily: "'VT323', monospace", fontSize: "16px" }}>AquaSlog</span> — Viewing <strong>{tank?.name}</strong>{tank?.user_display_name ? ` by ${tank.user_display_name}` : ""} — read only
         </div>
       )}
 

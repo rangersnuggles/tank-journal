@@ -26,7 +26,7 @@ export default function Nav({ user }) {
       zIndex: 10,
     }}>
       <Link href="/dashboard" style={{ fontFamily: "'Lora', serif", fontSize: "15px", color: "#0f172a", textDecoration: "none", fontWeight: 400 }}>
-        Tank Journal
+        Aqua Slog
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         {user && (

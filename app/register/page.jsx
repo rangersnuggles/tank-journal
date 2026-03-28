@@ -45,7 +45,7 @@ export default function RegisterPage() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafaf9", fontFamily }}>
       <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
         <h1 style={{ fontFamily: serifFamily, fontSize: 28, fontWeight: 400, marginBottom: 8, textAlign: "center", color: "#1a1a1a" }}>
-          Tank Journal
+          Aqua Slog
         </h1>
         <p style={{ textAlign: "center", color: "#6b7280", fontSize: 14, marginBottom: 32 }}>
           Create your account

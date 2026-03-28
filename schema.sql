@@ -1,60 +1,59 @@
--- ─────────────────────────────────────────
--- Tank Journal — Supabase Schema
--- Run this in your Supabase SQL editor
--- ─────────────────────────────────────────
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Tank Journal — D1 Schema (SQLite)
+-- Apply: wrangler d1 execute tank-journal-db --file=schema.sql
+-- ─────────────────────────────────────────────────────────────────────────────
 
-create table inhabitants (
-  id          bigint generated always as identity primary key,
-  name        text not null,
-  count       integer,
-  date_added  date not null default current_date,
-  notes       text,
-  created_at  timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  email         TEXT NOT NULL UNIQUE,
+  username      TEXT NOT NULL UNIQUE,       -- URL-safe slug, used in public URLs (/t/username/...)
+  display_name  TEXT,
+  password_hash TEXT NOT NULL,              -- "iterations:saltBase64:hashBase64" (PBKDF2-SHA256)
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-create table entries (
-  id          bigint generated always as identity primary key,
-  type        text not null check (type in ('parameters','changes','observations','medical','co2')),
-  date        date not null,
-  time        text not null,
-  data        jsonb not null default '{}',
-  note        text,
-  created_at  timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS sessions (
+  id         TEXT PRIMARY KEY,              -- 32-byte random hex token stored in HttpOnly cookie
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL,                 -- ISO8601 datetime
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS sessions_user_idx    ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS sessions_expires_idx ON sessions(expires_at);
 
--- Index for fast chronological listing
-create index entries_date_idx on entries (date desc, created_at desc);
-
--- Enable Row Level Security (keeps data private by default)
-alter table inhabitants enable row level security;
-alter table entries     enable row level security;
-
--- Simple open policies — fine for a personal app.
--- Swap these for auth-based policies if you ever add login.
-create policy "allow all" on inhabitants for all using (true) with check (true);
-create policy "allow all" on entries     for all using (true) with check (true);
-
--- ─────────────────────────────────────────
--- GitHub Commit Dashboard — Snapshot Cache
--- ─────────────────────────────────────────
-
-create table github_snapshots (
-  id         uuid default gen_random_uuid() primary key,
-  fetched_at timestamptz default now(),
-  account    text not null,
-  commits    jsonb not null
+CREATE TABLE IF NOT EXISTS tanks (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  description TEXT,
+  slug        TEXT,                         -- URL-safe, unique per user (null = no public page)
+  is_public   INTEGER NOT NULL DEFAULT 0,  -- 0=private, 1=public
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, slug)
 );
+CREATE INDEX IF NOT EXISTS tanks_user_idx ON tanks(user_id);
+CREATE INDEX IF NOT EXISTS tanks_slug_idx ON tanks(slug);
 
--- Index for fast recency lookups
-create index github_snapshots_fetched_at_idx on github_snapshots (account, fetched_at desc);
+CREATE TABLE IF NOT EXISTS inhabitants (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  tank_id    INTEGER NOT NULL REFERENCES tanks(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  count      INTEGER,
+  date_added TEXT NOT NULL DEFAULT (date('now')),
+  notes      TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS inhabitants_tank_idx ON inhabitants(tank_id);
 
-alter table github_snapshots enable row level security;
-create policy "allow all" on github_snapshots for all using (true) with check (true);
-
--- ─────────────────────────────────────────
--- Migration: add 'co2' entry type
--- Run this if your database was created before CO2 tracking was added.
--- ─────────────────────────────────────────
--- alter table entries drop constraint entries_type_check;
--- alter table entries add constraint entries_type_check
---   check (type in ('parameters','changes','observations','medical','co2'));
+CREATE TABLE IF NOT EXISTS entries (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  tank_id    INTEGER NOT NULL REFERENCES tanks(id) ON DELETE CASCADE,
+  type       TEXT NOT NULL,                 -- 'parameters'|'changes'|'observations'|'medical'|'co2'
+  date       TEXT NOT NULL,
+  time       TEXT NOT NULL,
+  data       TEXT NOT NULL DEFAULT '{}',   -- JSON stored as TEXT (D1 has no jsonb)
+  note       TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS entries_tank_date_idx ON entries(tank_id, date DESC, created_at DESC);

@@ -25,7 +25,7 @@ export default function Nav({ user }) {
       top: 0,
       zIndex: 10,
     }}>
-      <Link href="/dashboard" style={{ fontFamily: "'Lora', serif", fontSize: "15px", color: "#0f172a", textDecoration: "none", fontWeight: 400 }}>
+      <Link href="/dashboard" style={{ fontFamily: "'VT323', monospace", fontSize: "22px", color: "#0f172a", textDecoration: "none" }}>
         Aqua Slog
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>

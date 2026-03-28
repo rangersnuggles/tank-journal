@@ -41,7 +41,7 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafaf9", fontFamily }}>
       <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
-        <h1 style={{ fontFamily: serifFamily, fontSize: 28, fontWeight: 400, marginBottom: 8, textAlign: "center", color: "#1a1a1a" }}>
+        <h1 style={{ fontFamily: "'VT323', monospace", fontSize: 48, fontWeight: 400, marginBottom: 8, textAlign: "center", color: "#1a1a1a" }}>
           Aqua Slog
         </h1>
         <p style={{ textAlign: "center", color: "#6b7280", fontSize: 14, marginBottom: 32 }}>

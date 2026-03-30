@@ -6,6 +6,14 @@ import Link from "next/link";
 
 const fontFamily = "'DM Sans', sans-serif";
 
+const fish = `.            ,
+           .:/
+.      ,,///;,   ,;/
+  .   o:::::::;;///
+     >::::::::;;\\\\\\
+       ''\\\\\\\\\\'" ';\\
+          ';\\`;
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -77,6 +85,7 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafaf9", fontFamily }}>
       <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
+        <pre style={{ fontFamily: "monospace", fontSize: 10, color: "#9ca3af", textAlign: "center", margin: "0 0 8px", lineHeight: 1.4, whiteSpace: "pre" }}>{fish}</pre>
         <h1 style={{ fontFamily: "'VT323', monospace", fontSize: 48, fontWeight: 400, marginBottom: 8, textAlign: "center", color: "#1a1a1a" }}>
           AquaSlog
         </h1>

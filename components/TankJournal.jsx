@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import ThemeToggle from "./ThemeToggle";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -747,8 +748,9 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
       )}
 
       {readOnly && (
-        <div style={{ background: "var(--color-info-bg)", borderBottom: "1px solid var(--color-info-border)", padding: "9px 24px", fontSize: "12px", color: "var(--color-info-text)", fontFamily: "'DM Sans', sans-serif" }}>
-          <span style={{ fontFamily: "'VT323', monospace", fontSize: "16px" }}>AquaSlog</span> — Viewing <strong>{tank?.name}</strong>{tank?.user_display_name ? ` by ${tank.user_display_name}` : ""} — read only
+        <div style={{ background: "var(--color-info-bg)", borderBottom: "1px solid var(--color-info-border)", padding: "9px 24px", fontSize: "12px", color: "var(--color-info-text)", fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span><span style={{ fontFamily: "'VT323', monospace", fontSize: "16px" }}>AquaSlog</span> — Viewing <strong>{tank?.name}</strong>{tank?.user_display_name ? ` by ${tank.user_display_name}` : ""} — read only</span>
+          <ThemeToggle />
         </div>
       )}
 

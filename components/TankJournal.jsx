@@ -302,6 +302,20 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
   const [expanded, setExpanded] = useState(false);
   const since = new Date(inh.date_added + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
+  if (readOnly) {
+    return (
+      <div style={{ borderBottom: "1px solid #f1f5f9", padding: "9px 0" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "13px", fontWeight: 500, color: "#1e293b", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inh.name}</div>
+          <div style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "'DM Sans', sans-serif", marginTop: "1px" }}>
+            {inh.count != null ? `${inh.count} · ` : ""}{since}
+          </div>
+        </div>
+        {inh.notes && <p style={{ margin: "5px 0 0", fontSize: "12px", color: "#64748b", fontFamily: "'DM Sans', sans-serif", lineHeight: "1.5" }}>{inh.notes}</p>}
+      </div>
+    );
+  }
+
   return (
     <div style={{ borderBottom: "1px solid #f1f5f9", padding: "9px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setExpanded(!expanded)}>
@@ -316,12 +330,10 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
       {expanded && (
         <div style={{ marginTop: "8px", animation: "fadeIn 0.2s ease" }}>
           {inh.notes && <p style={{ margin: "0 0 7px", fontSize: "12px", color: "#64748b", fontFamily: "'DM Sans', sans-serif", lineHeight: "1.5" }}>{inh.notes}</p>}
-          {!readOnly && (
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => onEdit(inh)} style={{ fontSize: "11px", color: "#0891b2", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Edit</button>
-              <button onClick={() => onDelete(inh.id)} style={{ fontSize: "11px", color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Remove</button>
-            </div>
-          )}
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={() => onEdit(inh)} style={{ fontSize: "11px", color: "#0891b2", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Edit</button>
+            <button onClick={() => onDelete(inh.id)} style={{ fontSize: "11px", color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Remove</button>
+          </div>
         </div>
       )}
     </div>
@@ -720,6 +732,10 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
         button { transition: opacity 0.15s; }
         button:hover { opacity: 0.75; }
         button:disabled { cursor: default; }
+        @media (max-width: 600px) {
+          .tj-outer-layout { flex-direction: column !important; }
+          .tj-sidebar { width: 100% !important; position: static !important; }
+        }
       `}</style>
 
       {error && (
@@ -735,7 +751,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
         </div>
       )}
 
-      <div style={{ maxWidth: "1060px", margin: "0 auto", padding: "40px 24px 80px", display: "flex", gap: "36px", alignItems: "flex-start" }}>
+      <div className="tj-outer-layout" style={{ maxWidth: "1060px", margin: "0 auto", padding: "40px 24px 80px", display: "flex", gap: "36px", alignItems: "flex-start" }}>
 
         {/* ── Journal ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -852,7 +868,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
         </div>
 
         {/* ── Sidebar ── */}
-        <div style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px" }}>
+        <div className="tj-sidebar" style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px" }}>
 
           <div style={{ background: "#fafafa", border: "1px solid #f1f5f9", borderRadius: "12px", padding: "14px 18px", marginBottom: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: co2State ? "10px" : 0 }}>

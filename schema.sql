@@ -57,3 +57,10 @@ CREATE TABLE IF NOT EXISTS entries (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS entries_tank_date_idx ON entries(tank_id, date DESC, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  token      TEXT PRIMARY KEY,              -- 32-byte random hex token
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL                  -- ISO8601, 1 hour from creation
+);
+CREATE INDEX IF NOT EXISTS password_resets_user_idx ON password_resets(user_id);

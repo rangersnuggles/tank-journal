@@ -245,6 +245,20 @@ export default function RootLayout({ children }) {
       <body>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('aquaslog-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();` }} />
         {children}
+        <footer style={{
+          borderTop: "1px solid var(--color-border-subtle)",
+          padding: "20px 24px",
+          textAlign: "center",
+          fontSize: "11px",
+          color: "var(--color-text-faint)",
+          fontFamily: "'DM Sans', sans-serif",
+          background: "var(--color-bg)",
+        }}>
+          © 2026 AquaSlog ·{" "}
+          <a href="/privacy" style={{ color: "var(--color-text-faint)", textDecoration: "none" }}>Privacy Policy</a>
+          {" · "}
+          <a href="/terms" style={{ color: "var(--color-text-faint)", textDecoration: "none" }}>Terms of Use</a>
+        </footer>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
-const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/"];
+const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms"];
 const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/debug", "/api/tanks/"];
 
 export default function middleware(request) {

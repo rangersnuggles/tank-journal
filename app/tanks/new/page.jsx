@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 const sansFamily  = "'DM Sans', sans-serif";
 const serifFamily = "'Lora', serif";
@@ -39,6 +40,7 @@ export default function NewTankPage() {
         return;
       }
       const tank = await res.json();
+      posthog.capture("tank_created", { is_public: form.is_public });
       router.push(`/tanks/${tank.id}`);
     } catch {
       setError("Something went wrong. Please try again.");

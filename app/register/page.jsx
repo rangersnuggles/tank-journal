@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import Link from "next/link";
 
 const fontFamily = "'DM Sans', sans-serif";
@@ -31,6 +32,7 @@ export default function RegisterPage() {
         setError(data.error || "Registration failed");
         return;
       }
+      posthog.capture("signed_up");
       router.push("/dashboard");
       router.refresh();
     } catch {

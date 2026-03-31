@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import posthog from "posthog-js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -655,6 +656,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
       }
 
       await fetchAll();
+      posthog.capture("entry_created", { entry_type: activeType });
       setFormData({}); setNote(""); setDate(todayStr); setTime(nowTime); setShowForm(false);
     } catch {
       setError("Failed to save entry.");
@@ -666,6 +668,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
   const deleteEntry = async (id) => {
     try {
       await apiFetch(`${base}/entries/${id}`, { method: "DELETE" });
+      posthog.capture("entry_deleted");
       setEntries(prev => prev.filter(e => e.id !== id));
     } catch {
       setError("Failed to delete entry.");
@@ -681,6 +684,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
     setSavingInh(true);
     try {
       const row = await apiFetch(`${base}/inhabitants`, { method: "POST", body: JSON.stringify(data) });
+      posthog.capture("inhabitant_added");
       setInhabitants(prev => [...prev, row]);
       setShowAddInh(false);
     } catch { setError("Failed to add inhabitant."); }

@@ -5,6 +5,7 @@ export const runtime = "edge";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import posthog from "posthog-js";
 
 const sansFamily  = "'DM Sans', sans-serif";
 const serifFamily = "'Lora', serif";
@@ -77,8 +78,10 @@ export default function TankSettingsPage() {
   async function handleDelete() {
     if (!confirm("Delete this tank and ALL its entries? This cannot be undone.")) return;
     const res = await fetch(`/api/tanks/${tankId}`, { method: "DELETE" });
-    if (res.ok) router.push("/dashboard");
-    else setError("Failed to delete tank.");
+    if (res.ok) {
+      posthog.capture("tank_deleted");
+      router.push("/dashboard");
+    } else setError("Failed to delete tank.");
   }
 
   if (loading) {

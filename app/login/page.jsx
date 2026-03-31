@@ -90,7 +90,7 @@ export default function LoginPage() {
           AquaSlog
         </h1>
         <p style={{ textAlign: "center", color: "var(--color-text-muted)", fontSize: 14, marginBottom: 32 }}>
-          Sign in to your account
+          An Open Source Freshwater Aquarium Journal
         </p>
         <Suspense fallback={null}>
           <LoginForm />
@@ -104,6 +104,11 @@ export default function LoginPage() {
         <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-text-muted)", marginTop: 8 }}>
           <Link href="/reset-request" style={{ color: "var(--color-accent)", textDecoration: "none" }}>
             Forgot password?
+          </Link>
+        </p>
+        <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-text-muted)", marginTop: 8 }}>
+          <Link href="/t/robrob/75planted" style={{ color: "var(--color-accent)", textDecoration: "none" }}>
+            See what it looks like →
           </Link>
         </p>
       </div>

@@ -28,6 +28,11 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Analytics</h2>
+          <p style={{ margin: 0 }}>AquaSlog uses PostHog to collect anonymized usage analytics — page views and feature interactions. No personally identifiable information is sent to PostHog beyond what is inherent in normal web traffic (such as IP address). We use this data solely to understand how the app is used and to improve it. You can opt out by enabling "Do Not Track" in your browser.</p>
+        </section>
+
+        <section>
           <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Your rights</h2>
           <p style={{ margin: 0 }}>You can delete your account and all associated data at any time from your tank settings. To request data export or ask questions, contact us at hello@aquaslog.com.</p>
         </section>

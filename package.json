@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "next": "^15",
+    "posthog-js": "^1.364.2",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.8.0"

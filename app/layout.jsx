@@ -1,3 +1,5 @@
+import PostHogProvider from "../components/PostHogProvider";
+
 export const metadata = {
   title: "AquaSlog",
   description: "Freshwater aquarium log",
@@ -244,7 +246,7 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('aquaslog-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();` }} />
-        {children}
+        <PostHogProvider>{children}</PostHogProvider>
         <footer style={{
           borderTop: "1px solid var(--color-border-subtle)",
           padding: "20px 24px",

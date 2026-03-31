@@ -2,7 +2,7 @@ import PostHogProvider from "../components/PostHogProvider";
 
 export const metadata = {
   title: "AquaSlog",
-  description: "Freshwater aquarium log",
+  description: "An Open Source Freshwater Aquarium Journal",
 };
 
 export default function RootLayout({ children }) {

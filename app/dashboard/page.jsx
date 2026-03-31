@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     <>
       <Nav user={user} />
       <div style={{ maxWidth: "860px", margin: "0 auto", padding: "48px 24px 80px", fontFamily: sansFamily }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "24px", marginBottom: "32px" }}>
           <div>
             <h1 style={{ fontFamily: serifFamily, fontSize: "26px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
               My Tanks

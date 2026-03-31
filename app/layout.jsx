@@ -231,8 +231,9 @@ export default function RootLayout({ children }) {
             --color-lived-text: #1f2937;
           }
 
+          footer a:hover { color: var(--color-accent) !important; }
           * { box-sizing: border-box; }
-          body { margin: 0; padding: 0; background: var(--color-bg); }
+          body { margin: 0; padding: 0; background: var(--color-bg); display: flex; flex-direction: column; min-height: 100vh; }
           button { transition: opacity 0.15s; }
           button:hover { opacity: 0.75; }
           button:disabled { cursor: default; }
@@ -248,6 +249,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('aquaslog-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();` }} />
         <PostHogProvider>{children}</PostHogProvider>
         <footer style={{
+          marginTop: "auto",
           borderTop: "1px solid var(--color-border-subtle)",
           padding: "20px 24px",
           textAlign: "center",
@@ -260,6 +262,8 @@ export default function RootLayout({ children }) {
           <a href="/privacy" style={{ color: "var(--color-text-faint)", textDecoration: "none" }}>Privacy Policy</a>
           {" · "}
           <a href="/terms" style={{ color: "var(--color-text-faint)", textDecoration: "none" }}>Terms of Use</a>
+          {" · "}
+          <a href="https://github.com/rangersnuggles/tank-journal" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-text-faint)", textDecoration: "none" }}>GitHub</a>
         </footer>
       </body>
     </html>

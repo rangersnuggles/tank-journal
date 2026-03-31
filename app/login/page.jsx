@@ -83,14 +83,20 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-bg)", fontFamily }}>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--color-bg)", fontFamily }}>
       <div style={{ width: "100%", maxWidth: 400, padding: "0 24px" }}>
         <pre style={{ fontFamily: "monospace", fontSize: 10, color: "#9ca3af", textAlign: "center", margin: "0 0 8px", lineHeight: 1.4, whiteSpace: "pre" }}>{fish}</pre>
         <h1 style={{ fontFamily: "'VT323', monospace", fontSize: 48, fontWeight: 400, marginBottom: 8, textAlign: "center", color: "var(--color-text-primary)" }}>
           AquaSlog
         </h1>
-        <p style={{ textAlign: "center", color: "var(--color-text-muted)", fontSize: 14, marginBottom: 32 }}>
+        <p style={{ textAlign: "center", color: "var(--color-text-muted)", fontSize: 14, marginBottom: 8 }}>
           An Open Source Freshwater Aquarium Journal
+        </p>
+        <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-text-muted)", marginBottom: 32 }}>
+          Curious?{" "}
+          <Link href="/t/robrob/75planted" style={{ color: "var(--color-accent)", textDecoration: "none" }}>
+            Check out a live tank here →
+          </Link>
         </p>
         <Suspense fallback={null}>
           <LoginForm />
@@ -104,11 +110,6 @@ export default function LoginPage() {
         <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-text-muted)", marginTop: 8 }}>
           <Link href="/reset-request" style={{ color: "var(--color-accent)", textDecoration: "none" }}>
             Forgot password?
-          </Link>
-        </p>
-        <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-text-muted)", marginTop: 8 }}>
-          <Link href="/t/robrob/75planted" style={{ color: "var(--color-accent)", textDecoration: "none" }}>
-            See what it looks like →
           </Link>
         </p>
       </div>

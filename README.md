@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AquaSlog
 
-## Getting Started
+An open source freshwater aquarium journal. Track water parameters, inhabitants, plant and livestock changes, medical events, and CO₂ across multiple tanks. Public tank pages let you share your setup with others.
 
-First, run the development server:
+**Live at [aquaslog.com](https://aquaslog.com)**
+
+## Features
+
+- Journal entries for water parameters, changes, observations, medical events, and CO₂
+- Inhabitants sidebar that auto-syncs from your entries
+- Public read-only tank pages at `/t/:username/:slug`
+- Dark mode
+- Password reset via email
+
+## Stack
+
+- [Next.js 15](https://nextjs.org) (App Router)
+- [Cloudflare Pages](https://pages.cloudflare.com) + [D1](https://developers.cloudflare.com/d1/) (SQLite at the edge)
+- [Resend](https://resend.com) for transactional email
+- [PostHog](https://posthog.com) for analytics
+
+## Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Requires a `.env.local` with `RESEND_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, and `NEXT_PUBLIC_POSTHOG_HOST`. D1 is available locally via `wrangler` — see `wrangler.toml`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Hosted on Cloudflare Pages. Deploy manually:
 
-## Learn More
+```bash
+npm run pages:build && npm run pages:deploy
+```
 
-To learn more about Next.js, take a look at the following resources:
+Git push alone does not deploy.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Schema is in `schema.sql`. To run a query against the remote D1 database:
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx wrangler d1 execute tank-journal-db --remote --command="SELECT * FROM users"
+```

@@ -2,16 +2,19 @@
 import posthog from "posthog-js";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
+import { initAnalytics, sanitizeUrl } from "@/lib/analytics";
 
 function PostHogPageView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (pathname && posthog.__loaded) {
+    // initAnalytics() is idempotent; calling it here (child effects run before the
+    // provider's) means the very first page view is captured too.
+    if (pathname && initAnalytics()) {
       let url = window.location.origin + pathname;
       if (searchParams.toString()) url += "?" + searchParams.toString();
-      posthog.capture("$pageview", { $current_url: url });
+      posthog.capture("$pageview", { $current_url: sanitizeUrl(url) });
     }
   }, [pathname, searchParams]);
 
@@ -20,16 +23,8 @@ function PostHogPageView() {
 
 export default function PostHogProvider({ children }) {
   useEffect(() => {
-    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    const host = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
-    if (key && key !== "REPLACE_ME") {
-      posthog.init(key, {
-        api_host: host,
-        person_profiles: "identified_only",
-        capture_pageview: false,
-        capture_pageleave: true,
-      });
-    }
+    // Config (respect_dnt, URL masking, identified-only profiles) lives in lib/analytics.js.
+    initAnalytics();
   }, []);
 
   return (

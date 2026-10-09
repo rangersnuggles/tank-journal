@@ -6,15 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import posthog from "posthog-js";
-
-const sansFamily  = "'DM Sans', sans-serif";
-const serifFamily = "'Lora', serif";
-
-const inputStyle = {
-  padding: "9px 12px", border: "1px solid var(--color-border)", borderRadius: "6px",
-  fontSize: "14px", background: "var(--color-input-bg)", color: "var(--color-input-text)",
-  outline: "none", width: "100%", boxSizing: "border-box", fontFamily: sansFamily,
-};
+import { settingsInputStyle as inputStyle, sansFamily, serifFamily } from "@/components/formStyles";
 
 export default function TankSettingsPage() {
   const router = useRouter();
@@ -138,7 +130,21 @@ export default function TankSettingsPage() {
         </div>
       </form>
 
-      <div style={{ borderTop: "1px solid var(--color-danger-border)", marginTop: "48px", paddingTop: "24px" }}>
+      <div style={{ borderTop: "1px solid var(--color-border-subtle)", marginTop: "40px", paddingTop: "20px" }}>
+        <p style={{ fontSize: "12px", color: "var(--color-text-muted)", margin: "0 0 8px", fontWeight: 500 }}>Export</p>
+        <p style={{ fontSize: "13px", color: "var(--color-text-body)", margin: 0, lineHeight: 1.6 }}>
+          <a
+            href={`/api/account/export?format=csv&tank=${tankId}`}
+            download
+            onClick={() => posthog.capture("data_exported", { format: "csv", source: "tank_settings" })}
+            style={{ color: "var(--color-accent)", textDecoration: "none" }}
+          >Download this tank's entries (CSV)</a>
+          <span style={{ color: "var(--color-text-subtle)" }}> · </span>
+          <Link href="/account#your-data" style={{ color: "var(--color-accent)", textDecoration: "none" }}>Export all your data</Link>
+        </p>
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--color-danger-border)", marginTop: "40px", paddingTop: "24px" }}>
         <p style={{ fontSize: "12px", color: "var(--color-text-muted)", marginBottom: "12px", fontWeight: 500 }}>Danger zone</p>
         <button
           onClick={handleDelete}

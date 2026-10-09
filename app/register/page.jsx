@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import Link from "next/link";
+import { identifyUser } from "@/lib/analytics";
+import { inputStyle, btnStyle } from "@/components/formStyles";
 
 const fontFamily = "'DM Sans', sans-serif";
 
@@ -32,6 +34,8 @@ export default function RegisterPage() {
         setError(data.error || "Registration failed");
         return;
       }
+      const user = await res.json().catch(() => null);
+      identifyUser(user?.id);
       posthog.capture("signed_up");
       router.push("/dashboard");
       router.refresh();
@@ -71,28 +75,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-const inputStyle = {
-  padding: "10px 12px",
-  border: "1px solid var(--color-border-faint)",
-  borderRadius: 6,
-  fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
-  outline: "none",
-  width: "100%",
-  boxSizing: "border-box",
-  background: "var(--color-input-bg)",
-  color: "var(--color-input-text)",
-};
-
-const btnStyle = {
-  padding: "11px 16px",
-  background: "var(--color-btn-dark-bg)",
-  color: "var(--color-btn-dark-text)",
-  border: "none",
-  borderRadius: 6,
-  fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
-  cursor: "pointer",
-  fontWeight: 500,
-};

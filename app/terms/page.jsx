@@ -19,7 +19,7 @@ export default function TermsPage() {
 
         <section>
           <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Your content</h2>
-          <p style={{ margin: 0 }}>You retain ownership of all journal entries and data you create. By making a tank public, you grant AquaSlog a non-exclusive license to display that content at its public URL. You can revoke this at any time by marking the tank private or deleting it.</p>
+          <p style={{ margin: 0 }}>You retain ownership of all journal entries and data you create. By making a tank public, you grant AquaSlog a non-exclusive license to display that content at its public URL. You can revoke this at any time by marking the tank private, deleting it, or deleting your account.</p>
         </section>
 
         <section>
@@ -29,7 +29,7 @@ export default function TermsPage() {
 
         <section>
           <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Disclaimer</h2>
-          <p style={{ margin: 0 }}>AquaSlog is provided as-is. We make no guarantees of uptime or data retention, though we do our best to keep things running. Always keep your own backups of important information.</p>
+          <p style={{ margin: 0 }}>AquaSlog is provided as-is. We make no guarantees of uptime or data retention, though we do our best to keep things running. Always keep your own backups of important information — you can download a copy of your data at any time from your <a href="/account" style={{ color: "var(--color-accent)", textDecoration: "none" }}>account page</a>.</p>
         </section>
 
         <section>

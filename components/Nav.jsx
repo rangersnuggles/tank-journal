@@ -1,14 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
+import { identifyUser, resetAnalytics } from "@/lib/analytics";
 
 export default function Nav({ user }) {
   const router = useRouter();
+  const userId = user?.user_id ?? user?.id;
+
+  // Any page with a signed-in Nav knows the session: tie analytics to the opaque id.
+  useEffect(() => {
+    if (userId != null) identifyUser(userId);
+  }, [userId]);
 
   async function handleSignOut() {
     await fetch("/api/auth/logout", { method: "POST" });
+    resetAnalytics();
     router.push("/login");
     router.refresh();
   }
@@ -30,10 +39,11 @@ export default function Nav({ user }) {
         AquaSlog
       </Link>
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        {/* ph-no-capture keeps the display name out of PostHog autocapture ($el_text). */}
         {user && (
-          <span style={{ fontSize: "12px", color: "var(--color-text-subtle)" }}>
+          <Link href="/account" title="Account settings" className="ph-no-capture" style={{ fontSize: "12px", color: "var(--color-text-subtle)", textDecoration: "none" }}>
             {user.display_name || user.username}
-          </span>
+          </Link>
         )}
         <ThemeToggle />
         <button

@@ -4,6 +4,8 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SAMPLE_TANK_PATH } from "@/lib/site";
+import { identifyUser } from "@/lib/analytics";
+import { inputStyle, btnStyle } from "@/components/formStyles";
 
 const fontFamily = "'DM Sans', sans-serif";
 
@@ -38,6 +40,8 @@ function LoginForm() {
         setError(data.error || "Login failed");
         return;
       }
+      const user = await res.json().catch(() => null);
+      identifyUser(user?.id);
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -117,28 +121,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-const inputStyle = {
-  padding: "10px 12px",
-  border: "1px solid var(--color-border-faint)",
-  borderRadius: 6,
-  fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
-  outline: "none",
-  width: "100%",
-  boxSizing: "border-box",
-  background: "var(--color-input-bg)",
-  color: "var(--color-input-text)",
-};
-
-const btnStyle = {
-  padding: "11px 16px",
-  background: "var(--color-btn-dark-bg)",
-  color: "var(--color-btn-dark-text)",
-  border: "none",
-  borderRadius: 6,
-  fontSize: 14,
-  fontFamily: "'DM Sans', sans-serif",
-  cursor: "pointer",
-  fontWeight: 500,
-};

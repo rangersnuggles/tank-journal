@@ -3,6 +3,20 @@ export const runtime = "edge";
 import { getDB } from "@/lib/db";
 import { getSession, requireSession } from "@/lib/session";
 
+const SLUG_RE = /^[a-z0-9_-]+$/i;
+
+/** "" / whitespace / null → null (no public URL); otherwise validated + lowercased. */
+function normalizeSlug(raw) {
+  if (raw == null) return { slug: null };
+  if (typeof raw !== "string") return { error: "Slug must be a string" };
+  const trimmed = raw.trim();
+  if (trimmed === "") return { slug: null };
+  if (!SLUG_RE.test(trimmed)) {
+    return { error: "Slug may only contain letters, numbers, hyphens, and underscores" };
+  }
+  return { slug: trimmed.toLowerCase() };
+}
+
 async function getTankForUser(db, tankId, userId) {
   const tank = await db.prepare(`SELECT * FROM tanks WHERE id = ?`).bind(tankId).first();
   if (!tank) return { error: "Tank not found", status: 404 };
@@ -43,6 +57,18 @@ export async function PATCH(request, { params }) {
     if (key in body) {
       updates[key] = key === "is_public" ? (body[key] ? 1 : 0) : body[key];
     }
+  }
+  if ("name" in updates) {
+    const name = typeof updates.name === "string" ? updates.name.trim() : "";
+    if (!name) return Response.json({ error: "name is required" }, { status: 400 });
+    updates.name = name;
+  }
+  if ("slug" in updates) {
+    // The settings page always sends slug (even for private tanks), often as "".
+    // Store "" as NULL so several slug-less tanks don't collide on UNIQUE(user_id, slug).
+    const { slug, error: slugError } = normalizeSlug(updates.slug);
+    if (slugError) return Response.json({ error: slugError }, { status: 400 });
+    updates.slug = slug;
   }
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: "No valid fields to update" }, { status: 400 });

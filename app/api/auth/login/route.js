@@ -21,8 +21,10 @@ export async function POST(request) {
       .bind(email.toLowerCase())
       .first();
 
-    // Constant-time-ish: always run verifyPassword even when user not found to avoid timing attacks
-    const dummyHash = "210000:AAAAAAAAAAAAAAAAAAAAAA==:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    // Constant-time-ish: always run verifyPassword even when user not found to avoid timing attacks.
+    // Must use the same iteration count as real hashes (lib/auth.js): Workers reject PBKDF2 > 100k,
+    // which previously turned "unknown email" into a 500 instead of the normal 401.
+    const dummyHash = "100000:AAAAAAAAAAAAAAAAAAAAAA==:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
     const valid = user
       ? await verifyPassword(password, user.password_hash)
       : await verifyPassword(password, dummyHash).then(() => false);

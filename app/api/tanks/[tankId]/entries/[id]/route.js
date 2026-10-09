@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
 import { requireSession } from "@/lib/session";
+import { ENTRY_TYPE_KEYS, isValidEntryType } from "@/lib/entryTypes";
 
 async function resolveEntry(db, tankId, id, userId) {
   const tank = await db.prepare(`SELECT user_id FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -26,6 +27,12 @@ export async function PATCH(request, { params }) {
   if (error) return Response.json({ error }, { status });
 
   const body = await request.json();
+  if ("type" in body && !isValidEntryType(body.type)) {
+    return Response.json(
+      { error: `type must be one of: ${ENTRY_TYPE_KEYS.join(", ")}` },
+      { status: 400 }
+    );
+  }
   const allowed = ["type", "date", "time", "data", "note"];
   const updates = {};
   for (const key of allowed) {

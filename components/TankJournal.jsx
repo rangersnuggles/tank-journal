@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 import posthog from "posthog-js";
+import { localDateStr, localTimeStr } from "@/lib/dates";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,9 @@ const PARAMS = [
   { key: "kh",      label: "KH",    unit: "°dH" },
 ];
 
+// Rendered for entry types this version doesn't know (e.g. written by a newer client).
+const UNKNOWN_ENTRY_TYPE = { label: "Entry", color: "#64748b", icon: "•" };
+
 const CHANGE_TYPES        = ["Added","Removed","Trimmed","Died","Moved","Fertilized"];
 const REMOVE_CHANGE_TYPES = ["Removed","Died","Moved"];
 const OUTCOMES            = ["","Recovered — returned to display","Still in treatment","Died","Other"];
@@ -45,6 +49,16 @@ const inputStyle = {
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
+// Newest first: date, then time, then creation order (mirrors the API's ORDER BY).
+function sortEntries(list) {
+  return [...list].sort((a, b) =>
+    (b.date || "").localeCompare(a.date || "") ||
+    (b.time || "").localeCompare(a.time || "") ||
+    (b.created_at || "").localeCompare(a.created_at || "") ||
+    (b.id ?? 0) - (a.id ?? 0)
+  );
+}
+
 function fmtDate(str) {
   if (!str) return "";
   const d = new Date(str + "T12:00:00");
@@ -52,6 +66,25 @@ function fmtDate(str) {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+// Lightweight inline "are you sure?" — replaces a destructive button in place.
+function InlineConfirm({ prompt, confirmLabel, onConfirm, onCancel, busy }) {
+  const btn = {
+    background: "none", border: "1px solid var(--color-border)", borderRadius: "4px",
+    padding: "1px 8px", fontSize: "11px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+    lineHeight: 1.6,
+  };
+  return (
+    <span role="group" aria-label={prompt} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontFamily: "'DM Sans', sans-serif", color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
+      {prompt}
+      <button type="button" onClick={onConfirm} disabled={busy} autoFocus
+        style={{ ...btn, color: "var(--color-error-text)", borderColor: "var(--color-error-border)" }}>
+        {busy ? "…" : confirmLabel}
+      </button>
+      <button type="button" onClick={onCancel} disabled={busy} style={{ ...btn, color: "var(--color-text-muted)" }}>Cancel</button>
+    </span>
+  );
+}
 
 function ParamBadge({ label, value, unit }) {
   if (!value) return null;
@@ -95,8 +128,8 @@ function MedicalDetail({ label, value }) {
   );
 }
 
-function EntryCard({ entry, onDelete, onEdit, readOnly }) {
-  const type      = ENTRY_TYPES[entry.type];
+function EntryCard({ entry, onDelete, onEdit, readOnly, inhabitants }) {
+  const type      = ENTRY_TYPES[entry.type] ?? { ...UNKNOWN_ENTRY_TYPE, label: entry.type || UNKNOWN_ENTRY_TYPE.label };
   const isMedical = entry.type === "medical";
   const d         = entry.data || {};
 
@@ -106,6 +139,18 @@ function EntryCard({ entry, onDelete, onEdit, readOnly }) {
   const [editData,  setEditData]  = useState(entry.data || {});
   const [editNote,  setEditNote]  = useState(entry.note || "");
   const [saving,    setSaving]    = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
+
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await onDelete(entry.id);
+    } finally {
+      setDeleting(false);
+      setConfirmDel(false);
+    }
+  }
 
   function openEdit() {
     setEditDate(entry.date);
@@ -159,9 +204,12 @@ function EntryCard({ entry, onDelete, onEdit, readOnly }) {
               {fmtDate(entry.date)} · {entry.time}
             </span>
           </div>
-          {!readOnly && (
-            <button onClick={() => onDelete(entry.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-faint)", fontSize: "14px", padding: "0 0 0 8px", lineHeight: 1 }}>×</button>
-          )}
+          {!readOnly && (confirmDel ? (
+            <InlineConfirm prompt="Delete entry?" confirmLabel="Delete" busy={deleting}
+              onConfirm={confirmDelete} onCancel={() => setConfirmDel(false)} />
+          ) : (
+            <button onClick={() => setConfirmDel(true)} aria-label="Delete entry" title="Delete entry" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-faint)", fontSize: "14px", padding: "0 0 0 8px", lineHeight: 1 }}>×</button>
+          ))}
         </div>
 
         {!readOnly && editing ? (
@@ -179,7 +227,7 @@ function EntryCard({ entry, onDelete, onEdit, readOnly }) {
             <div style={{ marginBottom: "10px" }}>
               {entry.type === "parameters" && <ParametersForm data={editData} setData={setEditData} />}
               {entry.type === "changes"    && <ChangesForm    data={editData} setData={setEditData} />}
-              {entry.type === "medical"    && <MedicalForm    data={editData} setData={setEditData} inhabitants={[]} />}
+              {entry.type === "medical"    && <MedicalForm    data={editData} setData={setEditData} inhabitants={inhabitants} />}
               {entry.type === "co2"        && <Co2Form        data={editData} setData={setEditData} />}
             </div>
             <label style={{ display: "flex", flexDirection: "column", gap: "3px", marginBottom: "12px" }}>
@@ -303,6 +351,8 @@ function EntryCard({ entry, onDelete, onEdit, readOnly }) {
 
 function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const since = new Date(inh.date_added + "T12:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
   if (readOnly) {
@@ -333,10 +383,19 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
       {expanded && (
         <div style={{ marginTop: "8px", animation: "fadeIn 0.2s ease" }}>
           {inh.notes && <p style={{ margin: "0 0 7px", fontSize: "12px", color: "var(--color-text-muted)", fontFamily: "'DM Sans', sans-serif", lineHeight: "1.5" }}>{inh.notes}</p>}
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => onEdit(inh)} style={{ fontSize: "11px", color: "var(--color-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Edit</button>
-            <button onClick={() => onDelete(inh.id)} style={{ fontSize: "11px", color: "var(--color-error-text)", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Remove</button>
-          </div>
+          {confirmDel ? (
+            <InlineConfirm prompt={`Remove ${inh.name}?`} confirmLabel="Remove" busy={deleting}
+              onConfirm={async () => {
+                setDeleting(true);
+                try { await onDelete(inh.id); } finally { setDeleting(false); setConfirmDel(false); }
+              }}
+              onCancel={() => setConfirmDel(false)} />
+          ) : (
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => onEdit(inh)} style={{ fontSize: "11px", color: "var(--color-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Edit</button>
+              <button onClick={() => setConfirmDel(true)} style={{ fontSize: "11px", color: "var(--color-error-text)", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Remove</button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -346,7 +405,8 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
 function InhabitantForm({ initial, onSave, onCancel, saving }) {
   const [name, setName]           = useState(initial?.name || "");
   const [count, setCount]         = useState(initial?.count ?? "");
-  const [dateAdded, setDateAdded] = useState(initial?.date_added || new Date().toISOString().split("T")[0]);
+  // Lazy init: computed when the form opens (it mounts on open), in local time.
+  const [dateAdded, setDateAdded] = useState(() => initial?.date_added || localDateStr());
   const [notes, setNotes]         = useState(initial?.notes || "");
 
   return (
@@ -434,14 +494,15 @@ function ChangesForm({ data, setData }) {
   );
 }
 
-function MedicalForm({ data, setData, inhabitants }) {
+function MedicalForm({ data, setData, inhabitants = [] }) {
+  const listId = `inhabitant-list-${useId()}`;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 80px", gap: "8px" }}>
         <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
           <span style={{ fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: "'DM Sans', sans-serif" }}>Fish / inhabitant *</span>
-          <input list="inhabitant-list" type="text" placeholder="Select or type name…" value={data.fish || ""} onChange={e => setData({ ...data, fish: e.target.value })} style={inputStyle} />
-          <datalist id="inhabitant-list">
+          <input list={listId} type="text" placeholder="Select or type name…" value={data.fish || ""} onChange={e => setData({ ...data, fish: e.target.value })} style={inputStyle} />
+          <datalist id={listId}>
             {inhabitants.map(i => <option key={i.id} value={i.name} />)}
           </datalist>
         </label>
@@ -554,9 +615,6 @@ function Co2Form({ data, setData }) {
 
 // ─── Main journal client component ────────────────────────────────────────────
 
-const todayStr = new Date().toISOString().split("T")[0];
-const nowTime  = new Date().toTimeString().slice(0, 5);
-
 export default function TankJournal({ tankId, tank, readOnly = false }) {
   const [entries, setEntries]         = useState([]);
   const [inhabitants, setInhabitants] = useState([]);
@@ -568,8 +626,8 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
   const [activeType, setActiveType]   = useState("parameters");
   const [formData, setFormData]       = useState({});
   const [note, setNote]               = useState("");
-  const [date, setDate]               = useState(todayStr);
-  const [time, setTime]               = useState(nowTime);
+  const [date, setDate]               = useState(() => localDateStr());
+  const [time, setTime]               = useState(() => localTimeStr());
   const [filterType, setFilterType]   = useState("all");
 
   const [showAddInh, setShowAddInh]   = useState(false);
@@ -657,7 +715,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
 
       await fetchAll();
       posthog.capture("entry_created", { entry_type: activeType });
-      setFormData({}); setNote(""); setDate(todayStr); setTime(nowTime); setShowForm(false);
+      setFormData({}); setNote(""); setShowForm(false);
     } catch {
       setError("Failed to save entry.");
     } finally {
@@ -677,7 +735,16 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
 
   const updateEntry = async (id, patch) => {
     const updated = await apiFetch(`${base}/entries/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
-    setEntries(prev => prev.map(e => e.id === id ? updated : e));
+    setEntries(prev => sortEntries(prev.map(e => e.id === id ? updated : e)));
+  };
+
+  // Default date/time are taken when the form is opened (local time), not at page load.
+  const toggleForm = () => {
+    if (!showForm) {
+      setDate(localDateStr());
+      setTime(localTimeStr());
+    }
+    setShowForm(!showForm);
   };
 
   const addInhabitant = async (data) => {
@@ -779,7 +846,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
                 </p>
               </div>
               {!readOnly && (
-                <button onClick={() => setShowForm(!showForm)} style={{
+                <button onClick={toggleForm} style={{
                   background: showForm ? "var(--color-border-subtle)" : "var(--color-accent)",
                   color: showForm ? "var(--color-text-muted)" : "#fff",
                   border: "none", borderRadius: "7px", padding: "8px 16px",
@@ -869,7 +936,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>No entries yet.</div>
             )}
             {filtered.map(entry => (
-              <EntryCard key={entry.id} entry={entry} onDelete={deleteEntry} onEdit={updateEntry} readOnly={readOnly} />
+              <EntryCard key={entry.id} entry={entry} onDelete={deleteEntry} onEdit={updateEntry} readOnly={readOnly} inhabitants={inhabitants} />
             ))}
           </div>
         </div>

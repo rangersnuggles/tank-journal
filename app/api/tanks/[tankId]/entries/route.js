@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
 import { getSession, requireSession } from "@/lib/session";
+import { ENTRY_TYPE_KEYS, isValidEntryType } from "@/lib/entryTypes";
 
 async function resolveTank(db, tankId, user) {
   const tank = await db.prepare(`SELECT * FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -25,7 +26,7 @@ export async function GET(request, { params }) {
   const { results } = await db
     .prepare(
       `SELECT * FROM entries WHERE tank_id = ?
-       ORDER BY date DESC, created_at DESC`
+       ORDER BY date DESC, time DESC, created_at DESC`
     )
     .bind(tankId)
     .all();
@@ -52,6 +53,12 @@ export async function POST(request, { params }) {
   const { type, date, time, data, note } = await request.json();
   if (!type || !date || !time) {
     return Response.json({ error: "type, date, and time are required" }, { status: 400 });
+  }
+  if (!isValidEntryType(type)) {
+    return Response.json(
+      { error: `type must be one of: ${ENTRY_TYPE_KEYS.join(", ")}` },
+      { status: 400 }
+    );
   }
 
   const { meta } = await db

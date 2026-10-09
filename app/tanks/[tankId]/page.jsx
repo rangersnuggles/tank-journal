@@ -15,12 +15,15 @@ export default async function TankPage(props) {
   const tank = await db.prepare(`SELECT * FROM tanks WHERE id = ?`).bind(tankId).first();
 
   if (!tank) redirect("/dashboard");
-  if (!tank.is_public && (!user || user.user_id !== tank.user_id)) redirect("/login");
+  const isOwner = !!user && user.user_id === tank.user_id;
+  if (!tank.is_public && !isOwner) redirect("/login");
 
+  // Public tanks are viewable by anyone, but only the owner gets edit UI
+  // (the API enforces ownership on writes regardless).
   return (
     <>
       {user && <Nav user={user} />}
-      <TankJournal tankId={Number(tankId)} tank={tank} />
+      <TankJournal tankId={Number(tankId)} tank={tank} readOnly={!isOwner} />
     </>
   );
 }

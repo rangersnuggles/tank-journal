@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
 import { getSession, requireSession } from "@/lib/session";
+import { isDateStr, localDateStr } from "@/lib/dates";
 
 async function resolveTank(db, tankId, user) {
   const tank = await db.prepare(`SELECT * FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -41,13 +42,19 @@ export async function POST(request, { params }) {
 
   const { name, count, date_added, notes } = await request.json();
   if (!name) return Response.json({ error: "name is required" }, { status: 400 });
+  if (date_added != null && date_added !== "" && !isDateStr(date_added)) {
+    return Response.json({ error: "date_added must be YYYY-MM-DD" }, { status: 400 });
+  }
+  // The client always sends its own local date; this is only a fallback for
+  // callers that omit it (Workers' "local" time is UTC).
+  const dateAdded = date_added || localDateStr();
 
   const { meta } = await db
     .prepare(
       `INSERT INTO inhabitants (tank_id, name, count, date_added, notes)
        VALUES (?, ?, ?, ?, ?)`
     )
-    .bind(tankId, name, count ?? null, date_added ?? new Date().toISOString().slice(0, 10), notes ?? null)
+    .bind(tankId, name, count ?? null, dateAdded, notes ?? null)
     .run();
 
   const row = await db

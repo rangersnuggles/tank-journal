@@ -1,9 +1,18 @@
 "use client";
 import { useState, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import ThemeToggle from "./ThemeToggle";
+import LatestParamsCard from "./LatestParamsCard";
+import JournalViewToggle from "./JournalViewToggle";
 import posthog from "posthog-js";
 import { localDateStr, localTimeStr } from "@/lib/dates";
+
+// Charts pull in recharts; load them only when the Trends view is opened.
+const ParameterTrends = dynamic(() => import("./ParameterTrends"), {
+  ssr: false,
+  loading: () => <div style={{ padding: "60px 0", textAlign: "center", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>Loading charts…</div>,
+});
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -629,6 +638,7 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
   const [date, setDate]               = useState(() => localDateStr());
   const [time, setTime]               = useState(() => localTimeStr());
   const [filterType, setFilterType]   = useState("all");
+  const [view, setView]               = useState("journal"); // "journal" | "trends"
 
   const [showAddInh, setShowAddInh]   = useState(false);
   const [editingInh, setEditingInh]   = useState(null);
@@ -915,8 +925,9 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
           )}
 
           {/* Filter pills */}
-          <div style={{ display: "flex", gap: "5px", marginBottom: "4px", flexWrap: "wrap" }}>
-            {[["all","All"], ...Object.entries(ENTRY_TYPES).map(([k,v]) => [k, v.label])].map(([key, label]) => (
+          <div style={{ display: "flex", gap: "5px", marginBottom: "4px", flexWrap: "wrap", alignItems: "center" }}>
+            <JournalViewToggle view={view} onChange={setView} />
+            {view === "journal" && [["all","All"], ...Object.entries(ENTRY_TYPES).map(([k,v]) => [k, v.label])].map(([key, label]) => (
               <button key={key} onClick={() => setFilterType(key)} style={{
                 padding: "3px 11px", borderRadius: "20px", fontSize: "11px", border: "1px solid", cursor: "pointer",
                 background: filterType === key ? "var(--color-filter-active-bg)" : "transparent",
@@ -927,8 +938,12 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
             ))}
           </div>
 
+          {view === "trends" && (loading
+            ? <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>Loading…</div>
+            : <ParameterTrends entries={entries} />)}
+
           {/* Entries */}
-          <div>
+          {view === "journal" && <div>
             {loading && (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>Loading…</div>
             )}
@@ -938,11 +953,13 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
             {filtered.map(entry => (
               <EntryCard key={entry.id} entry={entry} onDelete={deleteEntry} onEdit={updateEntry} readOnly={readOnly} inhabitants={inhabitants} />
             ))}
-          </div>
+          </div>}
         </div>
 
         {/* ── Sidebar ── */}
         <div className="tj-sidebar" style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px" }}>
+
+          <LatestParamsCard entries={entries} loading={loading} onShowTrends={() => { setView("trends"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
 
           <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)", borderRadius: "12px", padding: "14px 18px", marginBottom: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: co2State ? "10px" : 0 }}>

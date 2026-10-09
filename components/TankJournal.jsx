@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import GettingStarted from "./GettingStarted";
 import posthog from "posthog-js";
 import { localDateStr, localTimeStr } from "@/lib/dates";
 
@@ -750,6 +751,13 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
     setShowForm(!showForm);
   };
 
+  // Opens the entry form preselected (getting-started quick actions).
+  const openFormWith = (type, preset = {}) => {
+    setActiveType(type); setFormData(preset); setNote("");
+    setDate(localDateStr()); setTime(localTimeStr());
+    setShowForm(true);
+  };
+
   const addInhabitant = async (data) => {
     setSavingInh(true);
     try {
@@ -935,7 +943,10 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
             {loading && (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>Loading…</div>
             )}
-            {!loading && filtered.length === 0 && (
+            {!loading && !readOnly && entries.length === 0 && !showForm && (
+              <GettingStarted tankName={tank?.name} onStart={openFormWith} />
+            )}
+            {!loading && filtered.length === 0 && (readOnly || entries.length > 0) && (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>No entries yet.</div>
             )}
             {filtered.map(entry => (

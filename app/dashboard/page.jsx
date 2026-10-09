@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { getDB } from "@/lib/db";
 import Nav from "@/components/Nav";
+import OnboardingEmptyState from "@/components/OnboardingEmptyState";
 
 const serifFamily = "'Lora', serif";
 const sansFamily  = "'DM Sans', sans-serif";
@@ -44,10 +45,7 @@ export default async function DashboardPage() {
         </div>
 
         {tanks.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 0", color: "var(--color-text-subtle)" }}>
-            <p style={{ fontSize: "14px", marginBottom: "16px" }}>You don't have any tanks yet.</p>
-            <Link href="/tanks/new" style={{ color: "var(--color-accent)", textDecoration: "none", fontSize: "13px" }}>Create your first tank →</Link>
-          </div>
+          <OnboardingEmptyState name={user.display_name || user.username} />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
             {tanks.map(tank => (

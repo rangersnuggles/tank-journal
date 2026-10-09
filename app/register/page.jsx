@@ -33,7 +33,8 @@ export default function RegisterPage() {
         return;
       }
       posthog.capture("signed_up");
-      router.push("/dashboard");
+      // New accounts have no tanks: go straight to creating the first one.
+      router.push("/tanks/new?welcome=1");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");

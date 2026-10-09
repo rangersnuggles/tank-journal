@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { SAMPLE_TANK_PATH } from "@/lib/site";
 
 const fontFamily = "'DM Sans', sans-serif";
 
@@ -94,7 +95,7 @@ export default function LoginPage() {
         </p>
         <p style={{ textAlign: "center", fontSize: 13, color: "var(--color-text-muted)", marginBottom: 32 }}>
           Curious?{" "}
-          <Link href="/t/robrob/75planted" style={{ color: "var(--color-accent)", textDecoration: "none" }}>
+          <Link href={SAMPLE_TANK_PATH} style={{ color: "var(--color-accent)", textDecoration: "none" }}>
             Check out a live tank here →
           </Link>
         </p>

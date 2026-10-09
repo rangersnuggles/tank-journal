@@ -7,6 +7,9 @@ import { getSession } from "@/lib/session";
 import { getDB } from "@/lib/db";
 import Nav from "@/components/Nav";
 import OnboardingEmptyState from "@/components/OnboardingEmptyState";
+import { UpNext, TankCardStatus } from "@/components/DashboardReminders";
+import { listUserReminders, lastDoneByTank, getUserSettings } from "@/lib/reminders/service";
+import { zonedParts } from "@/lib/reminders/dates";
 
 const serifFamily = "'Lora', serif";
 const sansFamily  = "'DM Sans', sans-serif";
@@ -24,6 +27,19 @@ export default async function DashboardPage() {
     )
     .bind(user.user_id)
     .all();
+
+  // Reminders ("Up next" + per-card status). Never let this break the dashboard.
+  let reminders = [], lastDone = {}, today = zonedParts(new Date(), "UTC").date;
+  try {
+    const settings = await getUserSettings(db, user.user_id);
+    today = zonedParts(new Date(), settings.timezone).date;
+    [reminders, lastDone] = await Promise.all([
+      listUserReminders(db, user.user_id),
+      lastDoneByTank(db, tanks.map((t) => t.id)),
+    ]);
+  } catch (err) {
+    console.error("dashboard reminders:", err?.message);
+  }
 
   return (
     <>
@@ -43,6 +59,8 @@ export default async function DashboardPage() {
             borderRadius: "7px", padding: "8px 16px", fontSize: "13px", fontWeight: 500,
           }}>+ New Tank</Link>
         </div>
+
+        <UpNext reminders={reminders} today={today} />
 
         {tanks.length === 0 ? (
           <OnboardingEmptyState name={user.display_name || user.username} />
@@ -74,6 +92,7 @@ export default async function DashboardPage() {
                       <span style={{ marginLeft: "8px" }}>· /t/{user.username}/{tank.slug}</span>
                     )}
                   </div>
+                  <TankCardStatus reminders={reminders.filter((r) => r.tank_id === tank.id)} lastWaterChange={lastDone[tank.id]?.water_change} today={today} />
                 </div>
               </Link>
             ))}

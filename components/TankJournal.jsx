@@ -9,6 +9,7 @@ import JournalViewToggle from "./JournalViewToggle";
 import SpeciesInput from "./SpeciesInput";
 import posthog from "posthog-js";
 import { localDateStr, localTimeStr } from "@/lib/dates";
+import RemindersCard, { ReminderResetHint } from "./RemindersCard";
 
 // Charts pull in recharts; load them only when the Trends view is opened.
 const ParameterTrends = dynamic(() => import("./ParameterTrends"), {
@@ -279,7 +280,17 @@ function EntryCard({ entry, onDelete, onEdit, readOnly, inhabitants }) {
                     fontFamily: "'Courier New', monospace", color: "var(--color-param-text)",
                   }}>
                     <span style={{ fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.05em" }}>Water Change</span>
-                    <span style={{ fontWeight: 600, marginLeft: "3px" }}>{d.waterChangePct}%</span>
+                    {d.waterChangePct && <span style={{ fontWeight: 600, marginLeft: "3px" }}>{d.waterChangePct}%</span>}
+                  </span>
+                )}
+                {d.filterCleaned && (
+                  <span style={{
+                    display: "inline-flex", alignItems: "baseline", gap: "2px",
+                    background: "var(--color-param-bg)", border: "1px solid var(--color-param-border)",
+                    borderRadius: "4px", padding: "2px 7px", fontSize: "11px",
+                    fontFamily: "'Courier New', monospace", color: "var(--color-param-text)",
+                  }}>
+                    <span style={{ fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.05em" }}>Filter Cleaned</span>
                   </span>
                 )}
               </div>
@@ -481,7 +492,7 @@ function ParametersForm({ data, setData }) {
           </label>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "4px", borderTop: "1px solid var(--color-border-subtle)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", paddingTop: "4px", borderTop: "1px solid var(--color-border-subtle)" }}>
         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "var(--color-text-body)" }}>
           <input
             type="checkbox"
@@ -502,6 +513,15 @@ function ParametersForm({ data, setData }) {
             ))}
           </select>
         )}
+        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "var(--color-text-body)", marginLeft: "6px" }}>
+          <input
+            type="checkbox"
+            checked={!!data.filterCleaned}
+            onChange={e => setData({ ...data, filterCleaned: e.target.checked })}
+            style={{ width: "14px", height: "14px", accentColor: "#0891b2", cursor: "pointer" }}
+          />
+          Filter cleaned
+        </label>
       </div>
     </div>
   );
@@ -669,6 +689,8 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
   const [showAddInh, setShowAddInh]   = useState(false);
   const [editingInh, setEditingInh]   = useState(null);
   const [savingInh, setSavingInh]     = useState(false);
+  const [reminders, setReminders]     = useState([]);   // from <RemindersCard>, for the form hint
+  const [reminderReset, setReminderReset] = useState(null); // { items, at } → card reloads + toasts
 
   const base = `/api/tanks/${tankId}`;
 
@@ -735,10 +757,11 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
 
     setSaving(true);
     try {
-      await apiFetch(`${base}/entries`, {
+      const created = await apiFetch(`${base}/entries`, {
         method: "POST",
         body: JSON.stringify({ type: activeType, date, time, data: formData, note }),
       });
+      if (created?.reminders_reset?.length) setReminderReset({ items: created.reminders_reset, at: Date.now() });
 
       if (activeType === "changes") {
         const { changeType, subject, quantity, speciesId } = formData;
@@ -771,8 +794,9 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
   };
 
   const updateEntry = async (id, patch) => {
-    const updated = await apiFetch(`${base}/entries/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+    const { reminders_reset, ...updated } = await apiFetch(`${base}/entries/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
     setEntries(prev => sortEntries(prev.map(e => e.id === id ? updated : e)));
+    if (reminders_reset?.length) setReminderReset({ items: reminders_reset, at: Date.now() });
   };
 
   // Default date/time are taken when the form is opened (local time), not at page load.
@@ -946,6 +970,7 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
               {activeType === "changes" && REMOVE_CHANGE_TYPES.includes(formData.changeType) && formData.subject && (
                 <p style={{ margin: "10px 0 0", fontSize: "11px", color: "var(--color-error-text)", fontFamily: "'DM Sans', sans-serif" }}>⬡ Will update count for "{formData.subject}" in inhabitants.</p>
               )}
+              <ReminderResetHint reminders={reminders} type={activeType} data={formData} />
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "14px" }}>
                 <button onClick={handleSubmit} disabled={saving} style={{
@@ -995,6 +1020,7 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
 
         {/* ── Sidebar ── */}
         <div className="tj-sidebar" style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px" }}>
+          {!readOnly && <RemindersCard tankId={tankId} entries={entries} resetEvent={reminderReset} onRemindersChange={setReminders} />}
 
           <LatestParamsCard entries={entries} loading={loading} onShowTrends={() => { setView("trends"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
 

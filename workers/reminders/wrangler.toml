@@ -1,0 +1,29 @@
+# AquaSlog reminders Worker — hourly cron that sends the daily reminder digest.
+# Separate from the Pages app (Pages has no cron triggers); shares the same D1 database.
+#
+#   Local:  npm run worker:dev    (from the repo root; shares the local D1 in .wrangler/state)
+#   Deploy: see README "Reminder emails" — deploys are manual, never scripted.
+
+name = "aquaslog-reminders"
+main = "index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["7 * * * *"]
+
+[vars]
+APP_ORIGIN = "https://aquaslog.com"
+
+[observability]
+enabled = true
+
+# Same binding + database as the root wrangler.toml (Pages).
+[[d1_databases]]
+binding = "DB"
+database_name = "tank-journal-db"
+database_id = "6ae6dcc1-30a0-4080-a6dc-068decd556bc"
+
+# Secrets (set with `wrangler secret put … --config workers/reminders/wrangler.toml`, not here):
+#   REMINDER_SIGNING_SECRET  — must match the Pages project's value
+#   RESEND_API_KEY           — without it, sendEmail falls back to the email_outbox table

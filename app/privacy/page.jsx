@@ -23,6 +23,11 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Reminder emails</h2>
+          <p style={{ margin: 0 }}>If you set up maintenance reminders, AquaSlog stores them (and your timezone, so reminders are due on your local calendar day) and may send you at most one reminder email per day, only when something is due. Reminders are private, even on public tanks. Emails are delivered through our email provider, Resend, which receives your email address and the email's contents solely to deliver it. Every reminder email has an unsubscribe link (one click, no login needed), and you can turn reminder emails on or off at any time in your email settings.</p>
+        </section>
+
+        <section>
           <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Data storage</h2>
           <p style={{ margin: 0 }}>Data is stored on Cloudflare's infrastructure. Passwords are hashed and never stored in plain text. Sessions are secured with HttpOnly cookies.</p>
         </section>

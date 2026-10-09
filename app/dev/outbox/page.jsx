@@ -3,11 +3,18 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import { getDB } from "@/lib/db";
+import DevDigestButton from "@/components/DevDigestButton";
 
 // Dev-only: review emails captured by lib/email/send.js in log mode.
 // 404s unless running under `next dev`.
 
 const sans = "'DM Sans', sans-serif";
+
+// Links in captured emails open in a new tab (the iframe stays script-free).
+function withBlankTarget(html) {
+  const base = '<base target="_blank">';
+  return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (h) => h + base) : base + html;
+}
 
 export default async function DevOutboxPage() {
   if (process.env.NODE_ENV !== "development") notFound();
@@ -29,6 +36,8 @@ export default async function DevOutboxPage() {
       <p style={{ fontSize: "12px", color: "var(--color-text-subtle)", margin: "0 0 28px" }}>
         Emails captured locally (EMAIL_MODE=log or no RESEND_API_KEY). Nothing here was sent. Newest first, last 50.
       </p>
+
+      <DevDigestButton />
 
       {loadError && (
         <p style={{ fontSize: "13px", color: "var(--color-error-text)" }}>
@@ -58,8 +67,8 @@ export default async function DevOutboxPage() {
               {m.html && (
                 <iframe
                   title={`Email ${m.id} HTML`}
-                  srcDoc={m.html}
-                  sandbox=""
+                  srcDoc={withBlankTarget(m.html)}
+                  sandbox="allow-popups allow-popups-to-escape-sandbox"
                   style={{ width: "100%", height: "380px", border: "none", background: "#fff", display: "block" }}
                 />
               )}

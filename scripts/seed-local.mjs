@@ -25,6 +25,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashPassword } from "../lib/auth.js";
 import { localDateStr } from "../lib/dates.js";
+import { reminderSeedSql } from "./seed/reminders.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = resolve(ROOT, ".wrangler/seed-local.sql");
@@ -251,6 +252,8 @@ entries.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 for (const e of entries) {
   sql.push(`INSERT INTO entries (tank_id, type, date, time, data, note, created_at) VALUES (${tankId(e.tank)}, ${sq(e.type)}, ${sq(e.date)}, ${sq(e.time)}, ${sq(JSON.stringify(e.data))}, ${sq(e.note)}, ${sq(e.createdAt)});`);
 }
+
+sql.push(...reminderSeedSql({ sq, userId, tankId, dateAgo, demoEmail: DEMO_EMAIL, tankA: TANK_A, tankB: TANK_B }));
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, sql.join("\n") + "\n");

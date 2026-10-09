@@ -4,10 +4,11 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
-const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms", "/goodbye", "/sitemap.xml", "/robots.txt"];
-const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/tanks/", "/api/species"];
+// "/r/" + "/unsubscribe" + "/api/email/": signed-token reminder email links (no session needed).
+const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms", "/goodbye", "/sitemap.xml", "/robots.txt", "/r/", "/unsubscribe"];
+const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/tanks/", "/api/species", "/api/email/"];
 // Dev-only tooling (e.g. /dev/outbox). The pages themselves also 404 outside development.
-const DEV_PAGE_PREFIXES = process.env.NODE_ENV === "development" ? ["/dev/"] : [];
+const DEV_PAGE_PREFIXES = process.env.NODE_ENV === "development" ? ["/dev/", "/api/dev/"] : [];
 
 // The old production hostname. Exact match only: preview deployments
 // (<hash>.tank-journal.pages.dev) and localhost must keep working.

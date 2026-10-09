@@ -1,6 +1,6 @@
 {
   "name": "tank-journal",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,10 @@
     "start": "next start",
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:dev": "wrangler pages dev .vercel/output/static",
-    "pages:deploy": "wrangler pages deploy .vercel/output/static --project-name=tank-journal"
+    "pages:deploy": "wrangler pages deploy .vercel/output/static --project-name=tank-journal",
+    "db:migrate:local": "wrangler d1 migrations apply tank-journal-db --local",
+    "db:seed:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-local.mjs",
+    "db:reset:local": "rm -rf .wrangler/state && npm run db:migrate:local && npm run db:seed:local"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1",

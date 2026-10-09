@@ -1,10 +1,11 @@
 export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
-import { requireSession } from "@/lib/session";
+import { getSession, unauthorized } from "@/lib/session";
 
 export async function GET(request) {
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
   const { results } = await db
     .prepare(
@@ -20,7 +21,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const { name, description, slug, is_public } = await request.json();
 
   if (!name) {

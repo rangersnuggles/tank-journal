@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
-import { getSession, requireSession } from "@/lib/session";
+import { getSession, unauthorized } from "@/lib/session";
 import { ENTRY_TYPE_KEYS, isValidEntryType } from "@/lib/entryTypes";
 import { autoResetFromEntry } from "@/lib/reminders/service";
 
@@ -43,7 +43,8 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   const { tankId } = await params;
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
 
   // Verify ownership (only owner can write)

@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
-import { getSession, requireSession } from "@/lib/session";
+import { getSession, unauthorized } from "@/lib/session";
 import { isDateStr, localDateStr } from "@/lib/dates";
 import { INHABITANT_SELECT, validateSpeciesId } from "@/lib/species";
 
@@ -34,7 +34,8 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   const { tankId } = await params;
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
 
   const tank = await db.prepare(`SELECT user_id FROM tanks WHERE id = ?`).bind(tankId).first();

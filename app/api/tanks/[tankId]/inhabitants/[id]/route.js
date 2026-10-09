@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
-import { requireSession } from "@/lib/session";
+import { getSession, unauthorized } from "@/lib/session";
 import { INHABITANT_SELECT, validateSpeciesId } from "@/lib/species";
 
 async function resolveInhabitant(db, tankId, id, userId) {
@@ -20,7 +20,8 @@ async function resolveInhabitant(db, tankId, id, userId) {
 
 export async function PATCH(request, { params }) {
   const { tankId, id } = await params;
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
 
   const { error, status } = await resolveInhabitant(db, tankId, id, user.user_id);
@@ -59,7 +60,8 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   const { tankId, id } = await params;
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
 
   const { error, status } = await resolveInhabitant(db, tankId, id, user.user_id);

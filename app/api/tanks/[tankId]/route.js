@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
-import { getSession, requireSession } from "@/lib/session";
+import { getSession, unauthorized } from "@/lib/session";
 
 const SLUG_RE = /^[a-z0-9_-]+$/i;
 
@@ -44,7 +44,8 @@ export async function GET(request, { params }) {
 
 export async function PATCH(request, { params }) {
   const { tankId } = await params;
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
 
   const { error, status, tank } = await getTankForUser(db, tankId, user.user_id);
@@ -96,7 +97,8 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   const { tankId } = await params;
-  const user = await requireSession(request);
+  const user = await getSession(request);
+  if (!user) return unauthorized();
   const db = getDB();
 
   const { error, status } = await getTankForUser(db, tankId, user.user_id);

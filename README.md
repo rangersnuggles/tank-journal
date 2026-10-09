@@ -53,3 +53,7 @@ Schema lives in `migrations/` (see `migrations/README.md`); `schema.sql` is a v1
 ```bash
 npx wrangler d1 execute tank-journal-db --remote --command="SELECT * FROM users"
 ```
+
+## License
+
+AquaSlog is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only). You're free to use, modify, and self-host it; if you run a modified version as a public service, you must make your source code available to its users.

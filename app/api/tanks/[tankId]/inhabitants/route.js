@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { getDB } from "@/lib/db";
 import { getSession, requireSession } from "@/lib/session";
 import { isDateStr, localDateStr } from "@/lib/dates";
+import { INHABITANT_SELECT, validateSpeciesId } from "@/lib/species";
 
 async function resolveTank(db, tankId, user) {
   const tank = await db.prepare(`SELECT * FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -24,7 +25,7 @@ export async function GET(request, { params }) {
   if (error) return Response.json({ error }, { status });
 
   const { results } = await db
-    .prepare(`SELECT * FROM inhabitants WHERE tank_id = ? ORDER BY created_at ASC`)
+    .prepare(`${INHABITANT_SELECT} WHERE i.tank_id = ? ORDER BY i.created_at ASC`)
     .bind(tankId)
     .all();
 
@@ -40,8 +41,10 @@ export async function POST(request, { params }) {
   if (!tank) return Response.json({ error: "Tank not found" }, { status: 404 });
   if (tank.user_id !== user.user_id) return Response.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, count, date_added, notes } = await request.json();
+  const { name, count, date_added, notes, species_id } = await request.json();
   if (!name) return Response.json({ error: "name is required" }, { status: 400 });
+  const species = await validateSpeciesId(db, species_id);
+  if (species.error) return Response.json({ error: species.error }, { status: 400 });
   if (date_added != null && date_added !== "" && !isDateStr(date_added)) {
     return Response.json({ error: "date_added must be YYYY-MM-DD" }, { status: 400 });
   }
@@ -51,14 +54,14 @@ export async function POST(request, { params }) {
 
   const { meta } = await db
     .prepare(
-      `INSERT INTO inhabitants (tank_id, name, count, date_added, notes)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO inhabitants (tank_id, name, count, date_added, notes, species_id)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .bind(tankId, name, count ?? null, dateAdded, notes ?? null)
+    .bind(tankId, name, count ?? null, dateAdded, notes ?? null, species.value ?? null)
     .run();
 
   const row = await db
-    .prepare(`SELECT * FROM inhabitants WHERE id = ?`)
+    .prepare(`${INHABITANT_SELECT} WHERE i.id = ?`)
     .bind(meta.last_row_id)
     .first();
 

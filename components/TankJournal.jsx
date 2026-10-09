@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect, useCallback, useId } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import ThemeToggle from "./ThemeToggle";
 import GettingStarted from "./GettingStarted";
 import LatestParamsCard from "./LatestParamsCard";
 import JournalViewToggle from "./JournalViewToggle";
+import SpeciesInput from "./SpeciesInput";
 import posthog from "posthog-js";
 import { localDateStr, localTimeStr } from "@/lib/dates";
 
@@ -67,6 +68,22 @@ function sortEntries(list) {
     (b.created_at || "").localeCompare(a.created_at || "") ||
     (b.id ?? 0) - (a.id ?? 0)
   );
+}
+
+// Inhabitant matching for auto-sync: a shared catalog species wins; otherwise a
+// trimmed, case-insensitive name match, also treating a trailing "s" as the same
+// name ("Amano shrimp" / "Amano shrimps"). Rows linked to a *different* species
+// never match by name.
+const nameKey = (s) => String(s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+function findInhabitant(list, name, speciesId) {
+  if (speciesId) {
+    const bySpecies = list.find(i => i.species_id === speciesId);
+    if (bySpecies) return bySpecies;
+  }
+  const key = nameKey(name);
+  const candidates = list.filter(i => !(speciesId && i.species_id && i.species_id !== speciesId));
+  return candidates.find(i => nameKey(i.name) === key)
+      ?? candidates.find(i => { const k = nameKey(i.name); return k + "s" === key || key + "s" === k; });
 }
 
 function fmtDate(str) {
@@ -236,7 +253,7 @@ function EntryCard({ entry, onDelete, onEdit, readOnly, inhabitants }) {
             </div>
             <div style={{ marginBottom: "10px" }}>
               {entry.type === "parameters" && <ParametersForm data={editData} setData={setEditData} />}
-              {entry.type === "changes"    && <ChangesForm    data={editData} setData={setEditData} />}
+              {entry.type === "changes"    && <ChangesForm    data={editData} setData={setEditData} inhabitants={inhabitants} />}
               {entry.type === "medical"    && <MedicalForm    data={editData} setData={setEditData} inhabitants={inhabitants} />}
               {entry.type === "co2"        && <Co2Form        data={editData} setData={setEditData} />}
             </div>
@@ -370,6 +387,9 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
       <div style={{ borderBottom: "1px solid var(--color-border-subtle)", padding: "9px 0" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-input-text)", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inh.name}</div>
+          {inh.species_scientific_name && nameKey(inh.species_scientific_name) !== nameKey(inh.name) && (
+            <div style={{ fontSize: "11px", fontStyle: "italic", color: "var(--color-text-muted)", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inh.species_scientific_name}</div>
+          )}
           <div style={{ fontSize: "11px", color: "var(--color-text-subtle)", fontFamily: "'DM Sans', sans-serif", marginTop: "1px" }}>
             {inh.count != null ? `${inh.count} · ` : ""}{since}
           </div>
@@ -384,6 +404,9 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setExpanded(!expanded)}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--color-input-text)", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inh.name}</div>
+          {inh.species_scientific_name && nameKey(inh.species_scientific_name) !== nameKey(inh.name) && (
+            <div style={{ fontSize: "11px", fontStyle: "italic", color: "var(--color-text-muted)", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{inh.species_scientific_name}</div>
+          )}
           <div style={{ fontSize: "11px", color: "var(--color-text-subtle)", fontFamily: "'DM Sans', sans-serif", marginTop: "1px" }}>
             {inh.count != null ? `${inh.count} · ` : ""}{since}
           </div>
@@ -414,6 +437,7 @@ function InhabitantRow({ inh, onEdit, onDelete, readOnly }) {
 
 function InhabitantForm({ initial, onSave, onCancel, saving }) {
   const [name, setName]           = useState(initial?.name || "");
+  const [speciesId, setSpeciesId] = useState(initial?.species_id ?? null);
   const [count, setCount]         = useState(initial?.count ?? "");
   // Lazy init: computed when the form opens (it mounts on open), in local time.
   const [dateAdded, setDateAdded] = useState(() => initial?.date_added || localDateStr());
@@ -423,7 +447,8 @@ function InhabitantForm({ initial, onSave, onCancel, saving }) {
     <div style={{ background: "var(--color-surface-raised)", border: "1px solid var(--color-border)", borderRadius: "8px", padding: "12px", marginBottom: "12px", animation: "fadeIn 0.2s ease" }}>
       {initial && <div style={{ fontSize: "10px", fontWeight: 600, color: "var(--color-text-muted)", marginBottom: "8px", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.05em", textTransform: "uppercase" }}>Editing</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
-        <input placeholder="Name / species" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
+        <SpeciesInput placeholder="Name / species" ariaLabel="Name / species" value={name} speciesId={speciesId}
+          onChange={(text, id) => { setName(text); setSpeciesId(id); }} style={inputStyle} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px" }}>
           <input placeholder="Count" type="number" value={count} onChange={e => setCount(e.target.value)} style={inputStyle} />
           <input type="date" value={dateAdded} onChange={e => setDateAdded(e.target.value)} style={inputStyle} />
@@ -433,7 +458,7 @@ function InhabitantForm({ initial, onSave, onCancel, saving }) {
           <button onClick={onCancel} disabled={saving} style={{ fontSize: "11px", color: "var(--color-text-subtle)", background: "none", border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Cancel</button>
           <button
             disabled={saving || !name.trim()}
-            onClick={() => onSave({ name: name.trim(), count: count !== "" ? parseInt(count) : null, date_added: dateAdded, notes })}
+            onClick={() => onSave({ name: name.trim(), count: count !== "" ? parseInt(count) : null, date_added: dateAdded, notes, species_id: speciesId })}
             style={{ fontSize: "11px", background: "var(--color-accent)", color: "#fff", border: "none", borderRadius: "5px", padding: "5px 12px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", opacity: saving ? 0.6 : 1 }}>
             {saving ? "Saving…" : initial ? "Save" : "Add"}
           </button>
@@ -482,7 +507,7 @@ function ParametersForm({ data, setData }) {
   );
 }
 
-function ChangesForm({ data, setData }) {
+function ChangesForm({ data, setData, inhabitants = [] }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 65px", gap: "8px" }}>
       <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
@@ -494,7 +519,8 @@ function ChangesForm({ data, setData }) {
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
         <span style={{ fontSize: "10px", color: "var(--color-text-muted)", fontFamily: "'DM Sans', sans-serif" }}>Plant / Animal / Item</span>
-        <input type="text" placeholder="e.g. Amano shrimp…" value={data.subject || ""} onChange={e => setData({ ...data, subject: e.target.value })} style={inputStyle} />
+        <SpeciesInput placeholder="e.g. Amano shrimp…" value={data.subject || ""} speciesId={data.speciesId ?? null} inhabitants={inhabitants}
+          onChange={(subject, speciesId) => setData({ ...data, subject, speciesId: speciesId ?? undefined })} style={inputStyle} />
       </label>
       <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
         <span style={{ fontSize: "10px", color: "var(--color-text-muted)", fontFamily: "'DM Sans', sans-serif" }}>Qty</span>
@@ -505,16 +531,13 @@ function ChangesForm({ data, setData }) {
 }
 
 function MedicalForm({ data, setData, inhabitants = [] }) {
-  const listId = `inhabitant-list-${useId()}`;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 80px", gap: "8px" }}>
         <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
           <span style={{ fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: "'DM Sans', sans-serif" }}>Fish / inhabitant *</span>
-          <input list={listId} type="text" placeholder="Select or type name…" value={data.fish || ""} onChange={e => setData({ ...data, fish: e.target.value })} style={inputStyle} />
-          <datalist id={listId}>
-            {inhabitants.map(i => <option key={i.id} value={i.name} />)}
-          </datalist>
+          <SpeciesInput placeholder="Select or type name…" value={data.fish || ""} speciesId={data.fishSpeciesId ?? null} inhabitants={inhabitants}
+            onChange={(fish, speciesId) => setData({ ...data, fish, fishSpeciesId: speciesId ?? undefined })} style={inputStyle} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
           <span style={{ fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: "'DM Sans', sans-serif" }}>Count</span>
@@ -680,9 +703,8 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
   useEffect(() => { if (!hasInitialData) fetchAll(); }, [fetchAll, hasInitialData]);
 
   // ── Inhabitant sync helpers ──
-  const patchInhabitantCount = async (name, delta) => {
-    const norm = name.trim().toLowerCase();
-    const inh  = inhabitants.find(i => i.name.trim().toLowerCase() === norm);
+  const patchInhabitantCount = async (name, delta, speciesId) => {
+    const inh = findInhabitant(inhabitants, name, speciesId);
     if (!inh) return;
     const newCount = (inh.count ?? 0) + delta;
     if (newCount <= 0) {
@@ -692,13 +714,14 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
     }
   };
 
-  const addOrUpdateInhabitant = async (name, qty, dateAdded) => {
-    const norm = name.trim().toLowerCase();
-    const inh  = inhabitants.find(i => i.name.trim().toLowerCase() === norm);
+  const addOrUpdateInhabitant = async (name, qty, dateAdded, speciesId) => {
+    const inh = findInhabitant(inhabitants, name, speciesId);
     if (inh) {
-      await apiFetch(`${base}/inhabitants/${inh.id}`, { method: "PATCH", body: JSON.stringify({ count: (inh.count ?? 0) + qty }) });
+      // Backfill the species link on an existing name-matched row.
+      const link = speciesId && !inh.species_id ? { species_id: speciesId } : {};
+      await apiFetch(`${base}/inhabitants/${inh.id}`, { method: "PATCH", body: JSON.stringify({ count: (inh.count ?? 0) + qty, ...link }) });
     } else {
-      await apiFetch(`${base}/inhabitants`, { method: "POST", body: JSON.stringify({ name: name.trim(), count: qty || null, date_added: dateAdded, notes: "" }) });
+      await apiFetch(`${base}/inhabitants`, { method: "POST", body: JSON.stringify({ name: name.trim(), count: qty || null, date_added: dateAdded, notes: "", species_id: speciesId ?? null }) });
     }
   };
 
@@ -718,13 +741,13 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
       });
 
       if (activeType === "changes") {
-        const { changeType, subject, quantity } = formData;
+        const { changeType, subject, quantity, speciesId } = formData;
         const qty = quantity ? parseInt(quantity) : 1;
-        if (changeType === "Added" && subject)                            await addOrUpdateInhabitant(subject, qty, date);
-        if (REMOVE_CHANGE_TYPES.includes(changeType) && subject)         await patchInhabitantCount(subject, -qty);
+        if (changeType === "Added" && subject)                            await addOrUpdateInhabitant(subject, qty, date, speciesId);
+        if (REMOVE_CHANGE_TYPES.includes(changeType) && subject)         await patchInhabitantCount(subject, -qty, speciesId);
       }
       if (activeType === "medical" && formData.outcome === "Died" && formData.fish) {
-        await patchInhabitantCount(formData.fish, -(parseInt(formData.count) || 1));
+        await patchInhabitantCount(formData.fish, -(parseInt(formData.count) || 1), formData.fishSpeciesId);
       }
 
       await fetchAll();
@@ -905,7 +928,7 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
 
               <div style={{ marginBottom: "12px" }}>
                 {activeType === "parameters"   && <ParametersForm data={formData} setData={setFormData} />}
-                {activeType === "changes"      && <ChangesForm    data={formData} setData={setFormData} />}
+                {activeType === "changes"      && <ChangesForm    data={formData} setData={setFormData} inhabitants={inhabitants} />}
                 {activeType === "medical"      && <MedicalForm    data={formData} setData={setFormData} inhabitants={inhabitants} />}
                 {activeType === "co2"          && <Co2Form        data={formData} setData={setFormData} />}
               </div>

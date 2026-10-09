@@ -8,6 +8,7 @@ An open source freshwater aquarium journal. Track water parameters, inhabitants,
 
 - Journal entries for water parameters, changes, observations, medical events, and CO₂
 - Inhabitants sidebar that auto-syncs from your entries
+- Fish, invertebrate and plant name autocomplete (your tank, your past names, and a species catalog)
 - Public read-only tank pages at `/t/:username/:slug`
 - Dark mode
 - Password reset via email
@@ -52,6 +53,17 @@ Schema lives in `migrations/` (see `migrations/README.md`); `schema.sql` is a v1
 
 ```bash
 npx wrangler d1 execute tank-journal-db --remote --command="SELECT * FROM users"
+```
+
+## Species data
+
+The species catalog (`migrations/0004_species.sql`) is generated from
+[Wikidata](https://www.wikidata.org) by `scripts/species/build-species.mjs`.
+Species data from Wikidata, [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
+Extra hobby names live in `scripts/species/aliases.json`. To refresh:
+
+```bash
+node scripts/species/build-species.mjs --refresh --stats
 ```
 
 ## License

@@ -318,6 +318,10 @@ if (extras.length) {
   }
 }
 
+// Hand-curated entries (aliases.json) are hobby species by definition; boost them
+// above obscure wild species that happen to share a prefix ("monte" → Monte Carlo).
+const CURATED_BOOST = 100;
+
 // Apply overrides, finalize names, dedupe.
 const records = [];
 for (const it of items.values()) {
@@ -338,7 +342,8 @@ for (const it of items.values()) {
     seenAlias.add(k);
     aliases.push(a.trim());
   }
-  records.push({ qid: it.qid, kind: it.kind, common_name: common, scientific_name: it.sci, aliases, popularity: it.sitelinks });
+  const popularity = it.sitelinks + (it.override ? CURATED_BOOST : 0);
+  records.push({ qid: it.qid, kind: it.kind, common_name: common, scientific_name: it.sci, aliases, popularity });
 }
 
 // The same scientific name can exist as two items (duplicate/merged-in-progress entries); keep the better-known one.
@@ -391,7 +396,8 @@ const header = `-- Migration 0004 — species catalog + optional species link on
 -- Rows: ${finalRows.length} (${Object.entries(counts).map(([k, n]) => `${k} ${n}`).join(", ")})
 --
 -- aliases: JSON array of other English names and scientific synonyms.
--- popularity: Wikipedia sitelink count from Wikidata, used only to rank ties.
+-- popularity: Wikipedia sitelink count from Wikidata (+${CURATED_BOOST} for species curated in
+-- aliases.json), used only to rank ties in search.
 --
 -- NOTE: the ALTER TABLE below is not idempotent (D1/SQLite has no
 -- ADD COLUMN IF NOT EXISTS). That is fine because wrangler records applied

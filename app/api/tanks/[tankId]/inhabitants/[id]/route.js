@@ -2,6 +2,7 @@ export const runtime = "edge";
 
 import { getDB } from "@/lib/db";
 import { requireSession } from "@/lib/session";
+import { INHABITANT_SELECT, validateSpeciesId } from "@/lib/species";
 
 async function resolveInhabitant(db, tankId, id, userId) {
   const tank = await db.prepare(`SELECT user_id FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -26,10 +27,15 @@ export async function PATCH(request, { params }) {
   if (error) return Response.json({ error }, { status });
 
   const body = await request.json();
-  const allowed = ["name", "count", "date_added", "notes"];
+  const allowed = ["name", "count", "date_added", "notes", "species_id"];
   const updates = {};
   for (const key of allowed) {
     if (key in body) updates[key] = body[key];
+  }
+  if ("species_id" in updates) {
+    const species = await validateSpeciesId(db, updates.species_id);
+    if (species.error) return Response.json({ error: species.error }, { status: 400 });
+    updates.species_id = species.value;
   }
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: "No valid fields to update" }, { status: 400 });
@@ -44,7 +50,7 @@ export async function PATCH(request, { params }) {
     .run();
 
   const row = await db
-    .prepare(`SELECT * FROM inhabitants WHERE id = ?`)
+    .prepare(`${INHABITANT_SELECT} WHERE i.id = ?`)
     .bind(id)
     .first();
 

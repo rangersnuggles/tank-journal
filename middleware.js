@@ -5,7 +5,7 @@ export const config = {
 };
 
 const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms"];
-const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/tanks/"];
+const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/tanks/", "/api/species"];
 // Dev-only tooling (e.g. /dev/outbox). The pages themselves also 404 outside development.
 const DEV_PAGE_PREFIXES = process.env.NODE_ENV === "development" ? ["/dev/"] : [];
 

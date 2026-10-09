@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import GettingStarted from "./GettingStarted";
 import posthog from "posthog-js";
 import { localDateStr, localTimeStr } from "@/lib/dates";
 
@@ -615,10 +616,12 @@ function Co2Form({ data, setData }) {
 
 // ─── Main journal client component ────────────────────────────────────────────
 
-export default function TankJournal({ tankId, tank, readOnly = false }) {
-  const [entries, setEntries]         = useState([]);
-  const [inhabitants, setInhabitants] = useState([]);
-  const [loading, setLoading]         = useState(true);
+// initialEntries/initialInhabitants: server-rendered data (public pages) — skips the first fetch.
+// publicBanner: replaces the default read-only bar.
+export default function TankJournal({ tankId, tank, readOnly = false, initialEntries, initialInhabitants, publicBanner }) {
+  const [entries, setEntries]         = useState(initialEntries ?? []);
+  const [inhabitants, setInhabitants] = useState(initialInhabitants ?? []);
+  const [loading, setLoading]         = useState(!initialEntries);
   const [saving, setSaving]           = useState(false);
   const [error, setError]             = useState(null);
 
@@ -663,7 +666,8 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
     }
   }, [base]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  const hasInitialData = !!initialEntries;
+  useEffect(() => { if (!hasInitialData) fetchAll(); }, [fetchAll, hasInitialData]);
 
   // ── Inhabitant sync helpers ──
   const patchInhabitantCount = async (name, delta) => {
@@ -747,6 +751,13 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
     setShowForm(!showForm);
   };
 
+  // Opens the entry form preselected (getting-started quick actions).
+  const openFormWith = (type, preset = {}) => {
+    setActiveType(type); setFormData(preset); setNote("");
+    setDate(localDateStr()); setTime(localTimeStr());
+    setShowForm(true);
+  };
+
   const addInhabitant = async (data) => {
     setSavingInh(true);
     try {
@@ -818,12 +829,12 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
         </div>
       )}
 
-      {readOnly && (
+      {readOnly && (publicBanner ?? (
         <div style={{ background: "var(--color-info-bg)", borderBottom: "1px solid var(--color-info-border)", padding: "9px 24px", fontSize: "12px", color: "var(--color-info-text)", fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span><span style={{ fontFamily: "'VT323', monospace", fontSize: "16px" }}>AquaSlog</span> — Viewing <strong>{tank?.name}</strong>{tank?.user_display_name ? ` by ${tank.user_display_name}` : ""} — read only</span>
           <ThemeToggle />
         </div>
-      )}
+      ))}
 
       <div className="tj-outer-layout" style={{ maxWidth: "1060px", margin: "0 auto", padding: "40px 24px 80px", display: "flex", gap: "36px", alignItems: "flex-start" }}>
 
@@ -932,7 +943,10 @@ export default function TankJournal({ tankId, tank, readOnly = false }) {
             {loading && (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>Loading…</div>
             )}
-            {!loading && filtered.length === 0 && (
+            {!loading && !readOnly && entries.length === 0 && !showForm && (
+              <GettingStarted tankName={tank?.name} onStart={openFormWith} />
+            )}
+            {!loading && filtered.length === 0 && (readOnly || entries.length > 0) && (
               <div style={{ textAlign: "center", padding: "60px 0", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", fontSize: "14px" }}>No entries yet.</div>
             )}
             {filtered.map(entry => (

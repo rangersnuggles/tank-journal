@@ -36,6 +36,10 @@ emails are captured to the local `email_outbox` table and shown at
 [`/dev/outbox`](http://localhost:3000/dev/outbox) (dev only). Set `RESEND_API_KEY` to send
 for real. PostHog is optional (`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`).
 
+Optional public settings: `NEXT_PUBLIC_SITE_URL` (canonical origin for metadata/sitemap,
+default `https://aquaslog.com`) and `NEXT_PUBLIC_SAMPLE_TANK_PATH` (the "live tank" link,
+default `/t/robrob/75planted`; use `/t/demo/75planted` locally).
+
 ## Deployment
 
 Hosted on Cloudflare Pages. Deploy manually:

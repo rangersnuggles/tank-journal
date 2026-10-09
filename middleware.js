@@ -4,13 +4,23 @@ export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
-const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms"];
+const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms", "/sitemap.xml", "/robots.txt"];
 const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/tanks/"];
 // Dev-only tooling (e.g. /dev/outbox). The pages themselves also 404 outside development.
 const DEV_PAGE_PREFIXES = process.env.NODE_ENV === "development" ? ["/dev/"] : [];
 
+// The old production hostname. Exact match only: preview deployments
+// (<hash>.tank-journal.pages.dev) and localhost must keep working.
+const LEGACY_HOST = "tank-journal.pages.dev";
+const CANONICAL_ORIGIN = "https://aquaslog.com";
+
 export default function middleware(request) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
+
+  const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
+  if (host === LEGACY_HOST) {
+    return NextResponse.redirect(`${CANONICAL_ORIGIN}${pathname}${search}`, 301);
+  }
 
   // Always allow public paths
   if (

@@ -31,6 +31,10 @@ export async function POST(request) {
     const id = user.user_id;
     const tankIds = `SELECT id FROM tanks WHERE user_id = ?`;
     await db.batch([
+      db.prepare(`DELETE FROM reminder_log WHERE reminder_id IN (SELECT id FROM reminders WHERE user_id = ?)`).bind(id),
+      db.prepare(`DELETE FROM reminders WHERE user_id = ?`).bind(id),
+      db.prepare(`DELETE FROM reminder_digests WHERE user_id = ?`).bind(id),
+      db.prepare(`DELETE FROM user_settings WHERE user_id = ?`).bind(id),
       db.prepare(`DELETE FROM entries WHERE tank_id IN (${tankIds})`).bind(id),
       db.prepare(`DELETE FROM inhabitants WHERE tank_id IN (${tankIds})`).bind(id),
       db.prepare(`DELETE FROM tanks WHERE user_id = ?`).bind(id),

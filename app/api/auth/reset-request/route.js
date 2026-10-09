@@ -1,7 +1,30 @@
 export const runtime = "edge";
 
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import { getDB } from "@/lib/db";
 import { generateSessionToken } from "@/lib/auth";
+import { sendEmail } from "@/lib/email/send";
+
+function resetEmail(resetUrl) {
+  const html = `
+          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #1a1a1a;">
+            <h1 style="font-size: 28px; font-weight: 400; margin: 0 0 8px; font-family: serif;">AquaSlog</h1>
+            <p style="color: #6b7280; margin: 0 0 24px; font-size: 14px;">Password reset request</p>
+            <p style="font-size: 15px; margin: 0 0 24px;">Click the button below to set a new password. This link expires in 1 hour.</p>
+            <a href="${resetUrl}" style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 500;">Reset password</a>
+            <p style="font-size: 12px; color: #9ca3af; margin: 24px 0 0;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `;
+  const text = [
+    "AquaSlog — password reset request",
+    "",
+    "Open this link to set a new password (expires in 1 hour):",
+    resetUrl,
+    "",
+    "If you didn't request this, you can safely ignore this email.",
+  ].join("\n");
+  return { html, text };
+}
 
 export async function POST(request) {
   try {
@@ -28,28 +51,21 @@ export async function POST(request) {
       .run();
 
     const resetUrl = `${new URL(request.url).origin}/reset-password?token=${token}`;
+    const { html, text } = resetEmail(resetUrl);
 
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "AquaSlog <noreply@aquaslog.com>",
-        to: [email],
+    try {
+      await sendEmail(getRequestContext().env, {
+        to: email,
         subject: "Reset your AquaSlog password",
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; color: #1a1a1a;">
-            <h1 style="font-size: 28px; font-weight: 400; margin: 0 0 8px; font-family: serif;">AquaSlog</h1>
-            <p style="color: #6b7280; margin: 0 0 24px; font-size: 14px;">Password reset request</p>
-            <p style="font-size: 15px; margin: 0 0 24px;">Click the button below to set a new password. This link expires in 1 hour.</p>
-            <a href="${resetUrl}" style="display: inline-block; background: #1a1a1a; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 500;">Reset password</a>
-            <p style="font-size: 12px; color: #9ca3af; margin: 24px 0 0;">If you didn't request this, you can safely ignore this email.</p>
-          </div>
-        `,
-      }),
-    });
+        html,
+        text,
+        idempotencyKey: `password-reset/${token}`,
+      });
+    } catch (err) {
+      // Don't surface delivery failures to the client: a 500 here (only for
+      // registered emails) would leak which addresses have accounts.
+      console.error("reset-request: email send failed:", err?.message);
+    }
 
     return Response.json({ ok: true });
   } catch (err) {

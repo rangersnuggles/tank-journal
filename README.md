@@ -23,10 +23,18 @@ An open source freshwater aquarium journal. Track water parameters, inhabitants,
 
 ```bash
 npm install
+npm run db:reset:local   # local D1: wipe, apply migrations/, seed demo data
 npm run dev
 ```
 
-Requires a `.env.local` with `RESEND_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, and `NEXT_PUBLIC_POSTHOG_HOST`. D1 is available locally via `wrangler` — see `wrangler.toml`.
+Log in as `demo@aquaslog.local` / `aquaslog-demo` (synthetic data; a second account,
+`viewer@aquaslog.local`, has no tanks). `next dev` and `wrangler d1 … --local` share
+the same local D1 under `.wrangler/state`.
+
+Email: with `EMAIL_MODE=log` in `.env.local` (or no `RESEND_API_KEY`), nothing is sent —
+emails are captured to the local `email_outbox` table and shown at
+[`/dev/outbox`](http://localhost:3000/dev/outbox) (dev only). Set `RESEND_API_KEY` to send
+for real. PostHog is optional (`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`).
 
 ## Deployment
 
@@ -40,7 +48,7 @@ Git push alone does not deploy.
 
 ## Database
 
-Schema is in `schema.sql`. To run a query against the remote D1 database:
+Schema lives in `migrations/` (see `migrations/README.md`); `schema.sql` is a v1.0 reference snapshot. To run a query against the remote D1 database:
 
 ```bash
 npx wrangler d1 execute tank-journal-db --remote --command="SELECT * FROM users"

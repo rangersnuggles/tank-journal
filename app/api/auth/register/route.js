@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { hashPassword } from "@/lib/auth";
 import { getDB } from "@/lib/db";
 import { createSession, sessionCookie } from "@/lib/session";
+import { passwordError, usernameError } from "@/lib/validation";
 
 export async function POST(request) {
   try {
@@ -14,19 +15,9 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    if (password.length < 8) {
-      return Response.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
-    }
-    // username must be URL-safe
-    if (!/^[a-z0-9_-]+$/i.test(username)) {
-      return Response.json(
-        { error: "Username may only contain letters, numbers, hyphens, and underscores" },
-        { status: 400 }
-      );
-    }
+    // Same rules as /api/account (lib/validation.js); usernames must be URL-safe.
+    const invalid = passwordError(password) || usernameError(username);
+    if (invalid) return Response.json({ error: invalid }, { status: 400 });
 
     const db = getDB();
 

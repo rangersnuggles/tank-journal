@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { getDB } from "@/lib/db";
 import { requireSession } from "@/lib/session";
 import { ENTRY_TYPE_KEYS, isValidEntryType } from "@/lib/entryTypes";
+import { autoResetFromEntry } from "@/lib/reminders/service";
 
 async function resolveEntry(db, tankId, id, userId) {
   const tank = await db.prepare(`SELECT user_id FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -53,10 +54,10 @@ export async function PATCH(request, { params }) {
     .run();
 
   const row = await db.prepare(`SELECT * FROM entries WHERE id = ?`).bind(id).first();
-  return Response.json({
-    ...row,
-    data: typeof row.data === "string" ? JSON.parse(row.data) : row.data,
-  });
+  const entry = { ...row, data: typeof row.data === "string" ? JSON.parse(row.data) : row.data };
+  // An edit can newly satisfy a reminder (e.g. ticking "Water change"); only moves due dates forward.
+  const reminders_reset = await autoResetFromEntry(db, { userId: user.user_id, tankId: Number(tankId), entry });
+  return Response.json({ ...entry, reminders_reset });
 }
 
 export async function DELETE(request, { params }) {

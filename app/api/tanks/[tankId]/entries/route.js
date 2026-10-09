@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { getDB } from "@/lib/db";
 import { getSession, requireSession } from "@/lib/session";
 import { ENTRY_TYPE_KEYS, isValidEntryType } from "@/lib/entryTypes";
+import { autoResetFromEntry } from "@/lib/reminders/service";
 
 async function resolveTank(db, tankId, user) {
   const tank = await db.prepare(`SELECT * FROM tanks WHERE id = ?`).bind(tankId).first();
@@ -74,8 +75,8 @@ export async function POST(request, { params }) {
     .bind(meta.last_row_id)
     .first();
 
-  return Response.json(
-    { ...row, data: typeof row.data === "string" ? JSON.parse(row.data) : row.data },
-    { status: 201 }
-  );
+  const entry = { ...row, data: typeof row.data === "string" ? JSON.parse(row.data) : row.data };
+  // Matching entries (e.g. a water change) push auto-reset reminders forward.
+  const reminders_reset = await autoResetFromEntry(db, { userId: user.user_id, tankId: Number(tankId), entry });
+  return Response.json({ ...entry, reminders_reset }, { status: 201 });
 }

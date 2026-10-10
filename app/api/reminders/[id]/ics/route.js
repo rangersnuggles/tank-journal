@@ -3,7 +3,7 @@ export const runtime = "edge";
 import { getDB } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { loadOwnReminder, getUserSettings } from "@/lib/reminders/service";
-import { renderReminderIcs } from "@/lib/calendar/feed";
+import { renderReminderIcs, getCalendarAlarm } from "@/lib/calendar/feed";
 import { icsFilename } from "@/lib/calendar/ics";
 
 // GET → single-event .ics (attachment) for the reminder's next due date. Owner only.
@@ -19,7 +19,8 @@ export async function GET(request, { params }) {
   const tank = await db.prepare(`SELECT name FROM tanks WHERE id = ?`).bind(reminder.tank_id).first();
   const row = { ...reminder, tank_name: tank?.name ?? "Tank" };
   const { timezone } = await getUserSettings(db, user.user_id);
-  const body = await renderReminderIcs(db, row, { timezone, origin: new URL(request.url).origin });
+  const alarm = await getCalendarAlarm(db, user.user_id);
+  const body = await renderReminderIcs(db, row, { timezone, alarm, origin: new URL(request.url).origin });
   return new Response(body, {
     status: 200,
     headers: {

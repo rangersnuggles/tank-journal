@@ -4,7 +4,11 @@
  * "Calendar" section of /account/notifications: the user's private ICS subscription
  * link (/cal/<token>.ics — see lib/calendar/feed.js).
  *
- *   <CalendarSettings initial={{ urls: { https, webcal, google } } | null} unavailable? />
+ *   <CalendarSettings initial={{ urls: { https, webcal, google } } | null}
+ *                     initialAlarm={{ time: "HH:MM" | "none", day: 0 | -1 }} unavailable? />
+ *
+ * The alert setting applies to the subscription feed and to per-reminder downloads,
+ * so it's shown whether or not a link exists.
  *
  * The link is created on demand ("Create calendar link") rather than on first view, so
  * no secret URL exists until the user asks for one.
@@ -24,8 +28,62 @@ const btn = {
 };
 const primaryBtn = { ...btn, background: "var(--color-accent)", borderColor: "var(--color-accent)", color: "#fff", fontWeight: 500 };
 const note = { fontSize: "12px", color: "var(--color-text-muted)", margin: 0, lineHeight: 1.6 };
+const field = {
+  padding: "7px 9px", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "13px",
+  background: "var(--color-input-bg)", color: "var(--color-input-text)", fontFamily: sans, outline: "none",
+};
 
-export default function CalendarSettings({ initial, unavailable = false }) {
+/** "Alert: [On the due date ▾] at [09:00]" — saves on change. */
+function AlarmPicker({ initial }) {
+  const [alarm, setAlarm] = useState(initial ?? { time: "09:00", day: 0 });
+  const [lastTime, setLastTime] = useState(initial?.time && initial.time !== "none" ? initial.time : "09:00");
+  const [msg, setMsg] = useState(null);
+  const when = alarm.time === "none" ? "none" : String(alarm.day);
+
+  async function save(next) {
+    const prev = alarm;
+    setAlarm(next); setMsg(null);
+    try {
+      const res = await fetch("/api/calendar", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't save.");
+      setAlarm(data.alarm);
+      posthog.capture("calendar_alert_updated", { day: data.alarm.day, none: data.alarm.time === "none" });
+      setMsg({ kind: "ok", text: "Saved" });
+    } catch (e) {
+      setAlarm(prev);
+      setMsg({ kind: "error", text: e.message });
+    }
+  }
+
+  return (
+    <div data-testid="calendar-alarm" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        <label htmlFor="calendar-alarm-when" style={{ fontSize: "13px", color: "var(--color-text-body)" }}>Alert</label>
+        <select id="calendar-alarm-when" value={when} style={field}
+          onChange={(e) => {
+            const v = e.target.value;
+            save(v === "none" ? { time: "none", day: alarm.day } : { time: lastTime, day: Number(v) });
+          }}>
+          <option value="0">On the due date</option>
+          <option value="-1">The day before</option>
+          <option value="none">No alert</option>
+        </select>
+        {when !== "none" && (
+          <>
+            <label htmlFor="calendar-alarm-time" style={{ fontSize: "13px", color: "var(--color-text-body)" }}>at</label>
+            <input id="calendar-alarm-time" type="time" step="300" value={alarm.time} style={field}
+              onChange={(e) => { if (e.target.value) { setLastTime(e.target.value); save({ time: e.target.value, day: alarm.day }); } }} />
+          </>
+        )}
+        {msg && <span role="status" style={{ fontSize: "12px", color: msg.kind === "ok" ? "var(--color-success-text)" : "var(--color-error-text)" }}>{msg.text}</span>}
+      </div>
+      <p style={note}>Your local time. Applies to the subscribed calendar and “Add to calendar” downloads.</p>
+    </div>
+  );
+}
+
+export default function CalendarSettings({ initial, initialAlarm, unavailable = false }) {
   const [urls, setUrls] = useState(initial?.urls ?? null);
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -102,6 +160,9 @@ export default function CalendarSettings({ initial, unavailable = false }) {
               </button>
             </div>
             <p style={note}>The link is private: anyone who has it can see your reminder titles and tank names. You can reset it any time.</p>
+            <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "14px" }}>
+              <AlarmPicker initial={initialAlarm} />
+            </div>
           </>
         ) : (
           <>
@@ -135,6 +196,10 @@ export default function CalendarSettings({ initial, unavailable = false }) {
               Anyone with this link can see your reminder titles and tank names. If it ends up somewhere it
               shouldn’t, reset it: the old link stops working immediately.
             </p>
+
+            <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "14px" }}>
+              <AlarmPicker initial={initialAlarm} />
+            </div>
 
             <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "14px" }}>
               {confirmReset ? (

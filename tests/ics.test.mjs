@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   escapeText, foldLine, icsDate, icsDateTime, sequenceFrom, buildReminderFeed, buildReminderIcs,
-  reminderEventFields, icsFilename,
+  reminderEventFields, icsFilename, alarmTrigger,
 } from "../lib/calendar/ics.js";
 import { deriveFeedToken, hashFeedToken, feedUrls, TOKEN_RE, randomNonce } from "../lib/calendar/feed.js";
 
@@ -213,4 +213,24 @@ test("subscription URLs", () => {
   assert.equal(u.webcal, "webcal://aquaslog.com/cal/abc_DEF-123.ics");
   assert.equal(u.google, "https://calendar.google.com/calendar/r?cid=webcal%3A%2F%2Faquaslog.com%2Fcal%2Fabc_DEF-123.ics");
   assert.equal(feedUrls("http://localhost:3030", "x").webcal, "webcal://localhost:3030/cal/x.ics");
+});
+
+test("alarm trigger: chosen time on the day, the day before, or none", () => {
+  assert.equal(alarmTrigger(), "PT9H");
+  assert.equal(alarmTrigger({ time: "07:30", day: 0 }), "PT7H30M");
+  assert.equal(alarmTrigger({ time: "00:00", day: 0 }), "PT0S");
+  assert.equal(alarmTrigger({ time: "18:00", day: -1 }), "-PT6H");
+  assert.equal(alarmTrigger({ time: "20:45", day: -1 }), "-PT3H15M");
+  assert.equal(alarmTrigger({ time: "00:00", day: -1 }), "-PT24H");
+  assert.equal(alarmTrigger({ time: "none", day: 0 }), null);
+  assert.equal(alarmTrigger({ time: "bogus", day: 0 }), "PT9H"); // falls back to the default
+});
+
+test("events carry the configured alarm, or no VALARM when alerts are off", () => {
+  const opts = { today: "2026-10-09", origin: "https://aquaslog.com", now: new Date("2026-10-09T14:05:01Z"), timezone: "America/New_York" };
+  const dayBefore = buildReminderIcs(FIXTURE[1], { ...opts, alarm: { time: "18:30", day: -1 } });
+  assert.match(dayBefore, /\r\nTRIGGER;RELATED=START:-PT5H30M\r\n/);
+  const none = buildReminderIcs(FIXTURE[1], { ...opts, alarm: { time: "none", day: 0 } });
+  assert.ok(!none.includes("BEGIN:VALARM"));
+  assert.ok(none.includes("END:VEVENT\r\nEND:VCALENDAR\r\n"));
 });

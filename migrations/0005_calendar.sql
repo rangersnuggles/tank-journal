@@ -7,8 +7,9 @@
 -- so the token is not derivable from the user id or from the database alone, and
 -- "Reset link" just replaces token_nonce + token_hash (the old URL 404s at once).
 --
--- Additive only: a new table, nothing existing is altered. Users without a row
--- simply have no calendar link.
+-- Additive only: a new table plus two defaulted columns on user_settings for the
+-- calendar alert (applies to the feed and to single-event downloads). Users without
+-- a calendar_feeds row simply have no calendar link.
 
 CREATE TABLE IF NOT EXISTS calendar_feeds (
   user_id     INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -17,3 +18,8 @@ CREATE TABLE IF NOT EXISTS calendar_feeds (
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))  -- last created/reset
 );
+
+-- Calendar alert: 'HH:MM' in the user's local time, or 'none' for no alert;
+-- day 0 = on the due date, -1 = the day before.
+ALTER TABLE user_settings ADD COLUMN calendar_alert_time TEXT NOT NULL DEFAULT '09:00';
+ALTER TABLE user_settings ADD COLUMN calendar_alert_day INTEGER NOT NULL DEFAULT 0 CHECK (calendar_alert_day IN (0, -1));

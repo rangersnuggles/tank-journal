@@ -35,6 +35,7 @@ export async function POST(request) {
       db.prepare(`DELETE FROM reminders WHERE user_id = ?`).bind(id),
       db.prepare(`DELETE FROM reminder_digests WHERE user_id = ?`).bind(id),
       db.prepare(`DELETE FROM user_settings WHERE user_id = ?`).bind(id),
+      db.prepare(`DELETE FROM calendar_feeds WHERE user_id = ?`).bind(id),
       db.prepare(`DELETE FROM entries WHERE tank_id IN (${tankIds})`).bind(id),
       db.prepare(`DELETE FROM inhabitants WHERE tank_id IN (${tankIds})`).bind(id),
       db.prepare(`DELETE FROM tanks WHERE user_id = ?`).bind(id),

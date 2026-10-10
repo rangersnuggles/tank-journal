@@ -10,7 +10,7 @@ export default function JournalViewToggle({ view, onChange }) {
   return (
     <div role="tablist" aria-label="Tank view" style={{
       display: "inline-flex", gap: "2px", padding: "2px", borderRadius: "20px",
-      border: "1px solid var(--color-border)", marginRight: "6px",
+      border: "1px solid var(--color-border)",
     }}>
       {VIEWS.map(([key, label]) => {
         const on = view === key;

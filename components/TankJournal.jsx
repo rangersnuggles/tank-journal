@@ -993,18 +993,22 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
             </div>
           )}
 
-          {/* Filter pills */}
-          <div style={{ display: "flex", gap: "5px", marginBottom: "4px", flexWrap: "wrap", alignItems: "center" }}>
-            <JournalViewToggle view={view} onChange={setView} />
-            {view === "journal" && [["all","All"], ...Object.entries(ENTRY_TYPES).map(([k,v]) => [k, v.label])].map(([key, label]) => (
-              <button key={key} onClick={() => setFilterType(key)} style={{
-                padding: "3px 11px", borderRadius: "20px", fontSize: "11px", border: "1px solid", cursor: "pointer",
-                background: filterType === key ? "var(--color-filter-active-bg)" : "transparent",
-                color: filterType === key ? "var(--color-filter-active-text)" : "var(--color-text-subtle)",
-                borderColor: filterType === key ? "var(--color-filter-active-border)" : "var(--color-border)",
-                fontFamily: "'DM Sans', sans-serif",
-              }}>{label}</button>
-            ))}
+          {/* Filter pills (left) · Journal/Trends toggle (right) */}
+          <div style={{ display: "flex", gap: "12px", marginBottom: "4px", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", alignItems: "center", minWidth: 0 }}>
+              {view === "journal" && [["all","All"], ...Object.entries(ENTRY_TYPES).map(([k,v]) => [k, v.label])].map(([key, label]) => (
+                <button key={key} onClick={() => setFilterType(key)} style={{
+                  padding: "3px 11px", borderRadius: "20px", fontSize: "11px", border: "1px solid", cursor: "pointer",
+                  background: filterType === key ? "var(--color-filter-active-bg)" : "transparent",
+                  color: filterType === key ? "var(--color-filter-active-text)" : "var(--color-text-subtle)",
+                  borderColor: filterType === key ? "var(--color-filter-active-border)" : "var(--color-border)",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>{label}</button>
+              ))}
+            </div>
+            <div style={{ flexShrink: 0 }}>
+              <JournalViewToggle view={view} onChange={setView} />
+            </div>
           </div>
 
           {view === "trends" && (loading

@@ -7,7 +7,7 @@
  * Lives in the journal column rather than the sidebar so the sidebar can stay short
  * (reminders + inhabitants) at laptop widths. Renders nothing for an empty tank.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PARAM_META, readingsFor, rangeStatus, formatTypical } from "@/lib/params";
 import { localDateStr } from "@/lib/dates";
 import { diffDays, fmtAgo } from "@/lib/reminders/dates";
@@ -28,25 +28,28 @@ const rowLabel = { fontFamily: "'Lora', serif", fontSize: "14px", color: "var(--
 const meta = { fontFamily: sans, fontSize: "11px", color: "var(--color-text-subtle)" };
 
 export default function TankGlance({ entries, co2State, dropChecker, medOpen = [], onShowTrends }) {
-  const today = localDateStr();
+  // "N days ago" depends on the viewer's local date. Public pages are server-rendered
+  // (in UTC on Workers), so ages are only computed after mount to avoid a hydration mismatch.
+  const [today, setToday] = useState(null);
+  useEffect(() => { setToday(localDateStr()); }, []);
 
   const rows = useMemo(() => PARAM_META.map((m) => {
     const rs = readingsFor(entries, m.key);
     if (!rs.length) return null;
     const latest = rs[rs.length - 1];
     const prev = rs[rs.length - 2];
-    return { meta: m, latest, prev, days: diffDays(today, latest.entry.date), trend: trend(latest, prev), status: rangeStatus(m.key, latest) };
+    return { meta: m, latest, prev, days: today ? diffDays(today, latest.entry.date) : null, trend: trend(latest, prev), status: rangeStatus(m.key, latest) };
   }).filter(Boolean), [entries, today]);
 
   const lastChange = useMemo(() => lastDoneFromEntries(entries).water_change, [entries]);
-  const newestDays = rows.length ? Math.min(...rows.map((r) => r.days)) : null;
+  const newestDays = today && rows.length ? Math.min(...rows.map((r) => r.days)) : null;
   const hasCo2 = !!(co2State && (co2State.status || co2State.bubbleRate || co2State.dropChecker || co2State.timerHours));
 
   if (!rows.length && !lastChange && !hasCo2 && !medOpen.length) return null;
 
   const water = [
     newestDays != null ? `tested ${fmtAgo(newestDays)}` : null,
-    lastChange ? `changed ${fmtAgo(diffDays(today, lastChange))}` : null,
+    today && lastChange ? `changed ${fmtAgo(diffDays(today, lastChange))}` : null,
   ].filter(Boolean).join(" · ");
 
   return (
@@ -71,7 +74,7 @@ export default function TankGlance({ entries, co2State, dropChecker, medOpen = [
                 const unit = m.unit && !/[a-z°]/i.test(latest.raw) ? m.unit : "";
                 const statusText = status ? `${status === "high" ? "Above" : "Below"} typical range (${formatTypical(m)}) — general guidance` : "";
                 const trendText = tr ? `${tr.word} from ${prev.raw}` : "";
-                const stale = days > newestDays;
+                const stale = days != null && newestDays != null && days > newestDays;
                 return (
                   <div key={m.key}
                     title={[m.name, trendText, statusText, stale ? `tested ${fmtAgo(days)}` : ""].filter(Boolean).join(" · ")}

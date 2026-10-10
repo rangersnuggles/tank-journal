@@ -5,7 +5,8 @@ export const config = {
 };
 
 // "/r/" + "/unsubscribe" + "/api/email/": signed-token reminder email links (no session needed).
-const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms", "/goodbye", "/sitemap.xml", "/robots.txt", "/r/", "/unsubscribe"];
+// "/cal/": private calendar feeds (/cal/<token>.ics) — the unguessable token is the credential.
+const PUBLIC_PAGE_PREFIXES = ["/login", "/register", "/reset-request", "/reset-password", "/t/", "/privacy", "/terms", "/goodbye", "/sitemap.xml", "/robots.txt", "/r/", "/unsubscribe", "/cal/"];
 const PUBLIC_API_PREFIXES = ["/api/auth/", "/api/tanks/", "/api/species", "/api/email/"];
 // Dev-only tooling (e.g. /dev/outbox). The pages themselves also 404 outside development.
 const DEV_PAGE_PREFIXES = process.env.NODE_ENV === "development" ? ["/dev/", "/api/dev/"] : [];

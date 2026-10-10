@@ -23,8 +23,9 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Reminder emails</h2>
+          <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Reminder emails and calendar</h2>
           <p style={{ margin: 0 }}>If you set up maintenance reminders, AquaSlog stores them (and your timezone, so reminders are due on your local calendar day) and may send you at most one reminder email per day, only when something is due. Reminders are private, even on public tanks. Emails are delivered through our email provider, Resend, which receives your email address and the email's contents solely to deliver it. Every reminder email has an unsubscribe link (one click, no login needed), and you can turn reminder emails on or off at any time in your email settings.</p>
+          <p style={{ margin: "10px 0 0" }}>You can also create a private calendar link to subscribe to your reminders in a calendar app. The link works without logging in, so anyone who has it can see your reminder titles, due dates and tank names; your calendar provider (for example Apple or Google) fetches it periodically and stores a copy of those events. Reset the link in your email &amp; calendar settings at any time to revoke it — the old link stops working immediately.</p>
         </section>
 
         <section>
@@ -42,7 +43,7 @@ export default function PrivacyPage() {
           <h2 style={{ fontFamily: serifFamily, fontSize: "18px", fontWeight: 400, color: "var(--color-text-primary)", margin: "0 0 8px" }}>Your rights</h2>
           <p style={{ margin: "0 0 10px" }}><strong style={{ fontWeight: 500, color: "var(--color-text-secondary)" }}>Export:</strong> you can download a copy of all your data at any time from your <a href="/account" style={{ color: "var(--color-accent)", textDecoration: "none" }}>account page</a> — everything as JSON, or each tank's journal as a CSV spreadsheet.</p>
           <p style={{ margin: "0 0 10px" }}><strong style={{ fontWeight: 500, color: "var(--color-text-secondary)" }}>Correction:</strong> you can change your display name, username, email address and password on your account page.</p>
-          <p style={{ margin: "0 0 10px" }}><strong style={{ fontWeight: 500, color: "var(--color-text-secondary)" }}>Deletion:</strong> you can delete your account from your <a href="/account" style={{ color: "var(--color-accent)", textDecoration: "none" }}>account page</a>. This immediately and permanently removes your account, tanks, journal entries, inhabitants and sessions from our database and takes down your public tank pages. Pseudonymous analytics events are not linked to your email or username; to have them removed too, contact us with your username before deleting your account.</p>
+          <p style={{ margin: "0 0 10px" }}><strong style={{ fontWeight: 500, color: "var(--color-text-secondary)" }}>Deletion:</strong> you can delete your account from your <a href="/account" style={{ color: "var(--color-accent)", textDecoration: "none" }}>account page</a>. This immediately and permanently removes your account, tanks, journal entries, inhabitants, reminders, calendar link and sessions from our database and takes down your public tank pages. Pseudonymous analytics events are not linked to your email or username; to have them removed too, contact us with your username before deleting your account.</p>
           <p style={{ margin: 0 }}>Questions? Contact us at hello@aquaslog.com.</p>
         </section>
 

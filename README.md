@@ -9,7 +9,7 @@ An open source freshwater aquarium journal. Track water parameters, inhabitants,
 - Journal entries for water parameters, changes, observations, medical events, and CO₂
 - Inhabitants sidebar that auto-syncs from your entries
 - Fish, invertebrate and plant name autocomplete (your tank, your past names, and a species catalog)
-- Maintenance reminders ("water change every 6 weeks") that reset when you log the task, with an optional daily email digest
+- Maintenance reminders ("water change every 6 weeks") that reset when you log the task, with an optional daily email digest, a private calendar subscription feed (Apple/Google/Outlook) and per-reminder "Add to calendar" downloads
 - Water parameter trend charts and an at-a-glance status strip (latest readings, CO₂, treatments)
 - Public read-only tank pages at `/t/:username/:slug`, with link previews and a sitemap
 - Account settings, full data export (JSON/CSV), and self-serve account deletion
@@ -73,7 +73,7 @@ production refuses to sign or verify without the secret.
 Production (manual, one time — nothing deploys automatically):
 
 ```bash
-# 1. Apply the migration
+# 1. Apply pending migrations (1.1.1 adds 0005_calendar.sql) BEFORE deploying the app
 npx wrangler d1 migrations apply tank-journal-db --remote
 # 2. Secrets: the same REMINDER_SIGNING_SECRET for the Pages project and the Worker
 npx wrangler pages secret put REMINDER_SIGNING_SECRET --project-name=tank-journal
@@ -86,6 +86,34 @@ npx wrangler deploy --config workers/reminders/wrangler.toml
 The Worker runs hourly (`7 * * * *`) and sends each user at most one digest per local day,
 after their chosen hour; `reminder_digests` makes runs idempotent. Overdue reminders are
 re-sent after 3 and 6 days, then no more emails.
+
+### Calendar feed
+
+On `/account/notifications` → **Calendar**, a user can create a private subscription link,
+`/cal/<token>.ics` (public route; the token is the credential). It is an RFC 5545 feed
+(`lib/calendar/ics.js`, tests in `tests/ics.test.mjs`) with one all-day event per *active*
+reminder on its **next** due date — no RRULEs, because due dates move when the task is
+logged; the feed always shows the current next occurrence (stable `UID`
+`reminder-<id>@aquaslog.com`, `SEQUENCE`/`LAST-MODIFIED` from `updated_at`, a 9 AM display
+alarm). Overdue reminders stay on their past due date with an `Overdue: ` prefix (decided
+at feed generation in the user's timezone). Paused and completed reminders are left out.
+
+- Tokens (migration `0005_calendar.sql`, table `calendar_feeds`): the URL token is
+  `HMAC-SHA256(REMINDER_SIGNING_SECRET, random nonce)`; only the nonce and the token's
+  SHA-256 are stored, and the feed is looked up by that hash (one indexed query; malformed
+  tokens never hit the DB). **Reset link** replaces the nonce, so the old URL 404s at once.
+  Rotating `REMINDER_SIGNING_SECRET` changes every calendar URL.
+- Responses: `text/calendar; charset=utf-8`, `Cache-Control: private, max-age=900`,
+  `REFRESH-INTERVAL`/`X-PUBLISHED-TTL` of 6 h. Unknown/revoked tokens get a bare 404.
+  Google Calendar refreshes subscriptions every ~8–24 h regardless; Apple is faster.
+- Per reminder, the ⋯ menu's **Add to calendar** downloads a one-event `.ics`
+  (`GET /api/reminders/<id>/ics`, owner only) whose UID includes the due date, so it never
+  collides with the subscribed copy.
+- The JSON export says whether a calendar link exists (dates only — never the token).
+
+Try it locally: log in as the demo user, open `/account/notifications`, **Create calendar
+link**, then `curl -i "$(pbpaste)"` after **Copy** (or paste the URL into a calendar app
+that can reach `localhost`).
 
 ## Deployment
 

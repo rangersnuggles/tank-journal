@@ -10,7 +10,7 @@ v1.0 reference snapshot only). Files are applied in filename order by
 | `0002_email_outbox.sql` | local email capture for `EMAIL_MODE=log` (`/dev/outbox`) | done |
 | `0003_reminders.sql` | reminders, reminder_log, user_settings, reminder_digests | done |
 | `0004_species.sql` | species catalog (generated from Wikidata by `scripts/species/build-species.mjs`) + `inhabitants.species_id` | done |
-| `0005_account.sql` | not needed (account features required no schema change) | unused |
+| `0005_calendar.sql` | `calendar_feeds` — private calendar subscription links (nonce + token hash) (1.1.1) | done |
 
 Rules:
 

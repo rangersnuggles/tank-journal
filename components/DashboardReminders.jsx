@@ -39,7 +39,7 @@ export function UpNext({ reminders, today: serverToday }) {
     <section data-testid="up-next" aria-labelledby="up-next-h" style={{ marginBottom: "28px", fontFamily: sans }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
         <h2 id="up-next-h" style={{ fontFamily: "'Lora', serif", fontSize: "17px", fontWeight: 400, color: "var(--color-text-primary)", margin: 0 }}>Up next</h2>
-        <Link href="/account/notifications" style={{ fontSize: "11px", color: "var(--color-text-subtle)", textDecoration: "none" }}>Email reminders</Link>
+        <Link href="/account/notifications" style={{ fontSize: "11px", color: "var(--color-text-subtle)", textDecoration: "none" }}>Email &amp; calendar</Link>
       </div>
       <div style={{ border: "1px solid var(--color-border-faint)", borderRadius: "10px", background: "var(--color-bg)", overflow: "hidden" }}>
         {shown.length === 0 && (

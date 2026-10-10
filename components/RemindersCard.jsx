@@ -5,18 +5,16 @@
  *
  *   <RemindersCard tankId entries resetEvent onRemindersChange />
  *
- * - Derived status ("Last water change: N days ago") comes from the loaded journal
- *   entries, so it shows even when no reminder exists.
  * - `resetEvent` ({ items, at }) is set by TankJournal when an entry save returns
  *   `reminders_reset`; the card reloads and toasts "Water change reminder reset — next due …".
- * Also exports <ReminderResetHint> for the entry form and <ReminderStatusLine> for read-only views.
+ * Also exports <ReminderResetHint> for the entry form. "Last water change" lives in <TankGlance>.
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 import { localDateStr } from "@/lib/dates";
-import { addDays, diffDays, dueState, fmtAgo, fmtInterval, fmtShortDate, maxDate } from "@/lib/reminders/dates";
+import { addDays, dueState, fmtInterval, fmtShortDate, maxDate } from "@/lib/reminders/dates";
 import { TASK_TYPES, TASK_TYPE_KEYS, reminderTitle, taskTypesForEntry, lastDoneFromEntries } from "@/lib/reminders/match";
 
 const sans = "'DM Sans', sans-serif";
@@ -50,25 +48,6 @@ export function DueChip({ dueDate, today, paused = false, compact = false }) {
       ...CHIP_STYLES[s.kind], borderRadius: "4px", padding: "1px 6px", fontSize: "10px",
       fontWeight: 600, fontFamily: sans, whiteSpace: "nowrap", flexShrink: 0,
     }}>{label}</span>
-  );
-}
-
-/** "Last water change: 41 days ago" — from journal entries. */
-export function ReminderStatusLine({ entries, taskType = "water_change", today }) {
-  const last = lastDoneFromEntries(entries)[taskType];
-  const t = today || localDateStr();
-  const label = TASK_TYPES[taskType]?.lastLabel || "Last done";
-  return (
-    <div data-testid="last-status" style={{ fontSize: "12px", fontFamily: sans, color: "var(--color-text-body)" }}>
-      {last ? (
-        <>
-          <span style={{ color: "var(--color-text-subtle)" }}>{label}:</span>{" "}
-          <span title={fmtShortDate(last, t)}>{fmtAgo(diffDays(t, last))}</span>
-        </>
-      ) : (
-        <span style={{ color: "var(--color-text-faint)" }}>No {TASK_TYPES[taskType]?.entryHint || "entries"} logged yet</span>
-      )}
-    </div>
   );
 }
 
@@ -248,48 +227,55 @@ function ReminderForm({ initial, lastDone, onSave, onCancel, saving, error }) {
 // ── Row ─────────────────────────────────────────────────────────────────────
 
 function ReminderRow({ r, today, onDone, onSnooze, onEdit, onDelete, busy }) {
-  const [mode, setMode] = useState(null); // null | "snooze" | "delete"
+  const [mode, setMode] = useState(null); // null | "menu" | "delete"
   const paused = r.status === "paused";
+  const title = reminderTitle(r);
   const sub = [
     r.interval_days ? `Every ${fmtInterval(r.interval_days)}` : "One-time",
-    r.auto_reset ? "auto-reset" : null,
-  ].filter(Boolean).join(" · ");
+    `due ${fmtShortDate(r.due_date, today)}`,
+  ].join(" · ");
+  const subTitle = r.auto_reset ? `${sub} · resets when you log it` : sub;
 
   return (
-    <div data-testid="reminder-row" data-task={r.task_type} style={{ padding: "9px 0", borderTop: "1px solid var(--color-border-subtle)", opacity: paused ? 0.6 : 1 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "6px" }}>
-        <span style={{ fontSize: "13px", color: "var(--color-text-primary)", fontFamily: sans, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reminderTitle(r)}</span>
-        <DueChip dueDate={r.due_date} today={today} paused={paused} />
-      </div>
-      <div style={{ fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: sans, margin: "2px 0 6px" }}>
-        {sub} · due {fmtShortDate(r.due_date, today)}
-      </div>
-      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
-        {mode === "snooze" ? (
-          <>
-            <span style={{ fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: sans }}>Snooze</span>
-            {[1, 3, 7].map((d) => (
-              <button key={d} type="button" disabled={busy} onClick={() => { setMode(null); onSnooze(r, d); }} style={smallBtn}>{d}d</button>
-            ))}
-            <button type="button" onClick={() => setMode(null)} style={{ ...smallBtn, border: "none" }} aria-label="Cancel snooze">×</button>
-          </>
-        ) : mode === "delete" ? (
-          <>
-            <span style={{ fontSize: "11px", color: "var(--color-text-muted)", fontFamily: sans }}>Delete?</span>
-            <button type="button" disabled={busy} onClick={() => onDelete(r)} autoFocus style={{ ...smallBtn, color: "var(--color-error-text)", borderColor: "var(--color-error-border)" }}>Delete</button>
-            <button type="button" onClick={() => setMode(null)} style={smallBtn}>Cancel</button>
-          </>
-        ) : (
-          <>
-            {!paused && (
-              <button type="button" disabled={busy} onClick={() => onDone(r)} style={{ ...smallBtn, color: "var(--color-success-text)", borderColor: "var(--color-success-border)" }}>✓ Done</button>
-            )}
-            {!paused && <button type="button" disabled={busy} onClick={() => setMode("snooze")} style={smallBtn}>Snooze</button>}
-            <button type="button" onClick={() => onEdit(r)} style={smallBtn}>Edit</button>
-            <button type="button" onClick={() => setMode("delete")} aria-label={`Delete ${reminderTitle(r)} reminder`} title="Delete reminder" style={{ ...smallBtn, border: "none", color: "var(--color-text-faint)", fontSize: "14px", padding: "0 4px", marginLeft: "auto" }}>×</button>
-          </>
+    <div data-testid="reminder-row" data-task={r.task_type} style={{ padding: "7px 0", borderTop: "1px solid var(--color-border-subtle)", opacity: paused ? 0.6 : 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+        {paused ? <span style={{ width: "18px", flexShrink: 0 }} /> : (
+          <button type="button" className="rm-done" disabled={busy} onClick={() => onDone(r)} aria-label={`Mark ${title} done`} title="Mark done" style={{
+            width: "18px", height: "18px", flexShrink: 0, borderRadius: "50%", padding: 0, cursor: "pointer",
+            border: "1.5px solid var(--color-success-border)", background: "transparent",
+            fontSize: "10px", lineHeight: 1, fontFamily: sans,
+          }}>✓</button>
         )}
+        <span style={{ flex: 1, fontSize: "13px", color: "var(--color-text-primary)", fontFamily: sans, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={title}>{title}</span>
+        <DueChip dueDate={r.due_date} today={today} paused={paused} compact />
       </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingLeft: "25px", marginTop: "1px" }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: sans, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={subTitle}>{sub}</span>
+        <button type="button" onClick={() => setMode(mode ? null : "menu")} aria-expanded={!!mode} aria-label={`More actions for ${title}`} title="Snooze, edit or delete" style={{
+          background: "none", border: "none", padding: "0 2px", cursor: "pointer", fontSize: "13px", lineHeight: 1,
+          color: mode ? "var(--color-text-secondary)" : "var(--color-text-faint)", fontFamily: sans,
+        }}>⋯</button>
+      </div>
+      {mode && (
+        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center", paddingLeft: "25px", marginTop: "6px" }}>
+          {mode === "delete" ? (
+            <>
+              <span style={{ fontSize: "11px", color: "var(--color-text-muted)", fontFamily: sans }}>Delete?</span>
+              <button type="button" disabled={busy} onClick={() => onDelete(r)} autoFocus style={{ ...smallBtn, color: "var(--color-error-text)", borderColor: "var(--color-error-border)" }}>Delete</button>
+              <button type="button" onClick={() => setMode("menu")} style={smallBtn}>Cancel</button>
+            </>
+          ) : (
+            <>
+              {!paused && <span style={{ fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: sans }}>Snooze</span>}
+              {!paused && [1, 3, 7].map((d) => (
+                <button key={d} type="button" disabled={busy} onClick={() => { setMode(null); onSnooze(r, d); }} style={smallBtn}>{d}d</button>
+              ))}
+              <button type="button" onClick={() => { setMode(null); onEdit(r); }} style={smallBtn}>Edit</button>
+              <button type="button" onClick={() => setMode("delete")} style={{ ...smallBtn, color: "var(--color-error-text)" }}>Delete</button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -416,8 +402,6 @@ export default function RemindersCard({ tankId, entries = [], resetEvent = null,
         )}
       </div>
 
-      <ReminderStatusLine entries={entries} taskType="water_change" today={today} />
-
       {formOpen && (
         <ReminderForm
           key={editing?.id ?? "new"}
@@ -449,6 +433,10 @@ export default function RemindersCard({ tankId, entries = [], resetEvent = null,
         Private to you. <Link href="/account/notifications" style={{ color: "var(--color-text-subtle)" }}>Email settings</Link>
       </div>
 
+      <style>{`
+        .rm-done { color: transparent; }
+        .rm-done:hover, .rm-done:focus-visible { color: var(--color-success-text); background: var(--color-success-bg) !important; opacity: 1 !important; }
+      `}</style>
       <Toast message={toast} onClose={closeToast} />
     </div>
   );

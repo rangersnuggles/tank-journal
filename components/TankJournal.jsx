@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import ThemeToggle from "./ThemeToggle";
 import GettingStarted from "./GettingStarted";
-import LatestParamsCard from "./LatestParamsCard";
+import TankGlance from "./TankGlance";
 import JournalViewToggle from "./JournalViewToggle";
 import SpeciesInput from "./SpeciesInput";
 import posthog from "posthog-js";
@@ -875,7 +875,7 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
         button:disabled { cursor: default; }
         @media (max-width: 600px) {
           .tj-outer-layout { flex-direction: column !important; }
-          .tj-sidebar { width: 100% !important; position: static !important; }
+          .tj-sidebar { width: 100% !important; position: static !important; max-height: none !important; overflow: visible !important; }
         }
       `}</style>
 
@@ -923,6 +923,16 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
               )}
             </div>
           </div>
+
+          {!loading && (
+            <TankGlance
+              entries={entries}
+              co2State={co2State}
+              dropChecker={co2State?.dropChecker ? DROP_CHECKER_MAP[co2State.dropChecker] : null}
+              medOpen={medOpen}
+              onShowTrends={() => setView("trends")}
+            />
+          )}
 
           {/* Entry form */}
           {!readOnly && showForm && (
@@ -1019,71 +1029,8 @@ export default function TankJournal({ tankId, tank, readOnly = false, initialEnt
         </div>
 
         {/* ── Sidebar ── */}
-        <div className="tj-sidebar" style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px" }}>
+        <div className="tj-sidebar" style={{ width: "230px", flexShrink: 0, position: "sticky", top: "40px", maxHeight: "calc(100vh - 56px)", overflowY: "auto", scrollbarWidth: "thin" }}>
           {!readOnly && <RemindersCard tankId={tankId} entries={entries} resetEvent={reminderReset} onRemindersChange={setReminders} />}
-
-          <LatestParamsCard entries={entries} loading={loading} onShowTrends={() => { setView("trends"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
-
-          <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)", borderRadius: "12px", padding: "14px 18px", marginBottom: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: co2State ? "10px" : 0 }}>
-              <div style={{ fontFamily: "'Lora', serif", fontSize: "15px", color: "var(--color-text-primary)", fontWeight: 400 }}>CO₂</div>
-              {co2State?.status ? (
-                <span style={{
-                  display: "inline-flex", alignItems: "center", gap: "5px",
-                  background: co2State.status === "on" ? "var(--color-success-bg)" : "var(--color-error-bg)",
-                  border: `1px solid ${co2State.status === "on" ? "var(--color-success-border)" : "var(--color-error-border)"}`,
-                  borderRadius: "4px", padding: "2px 8px", fontSize: "10px", fontWeight: 700,
-                  color: co2State.status === "on" ? "var(--color-success-text)" : "var(--color-error-text)",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}>
-                  <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: co2State.status === "on" ? "#22c55e" : "#ef4444" }} />
-                  {co2State.status.toUpperCase()}
-                </span>
-              ) : (
-                <span style={{ fontSize: "10px", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif" }}>unknown</span>
-              )}
-            </div>
-            {co2State ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                {co2State.bubbleRate && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>
-                    <span style={{ color: "var(--color-text-subtle)" }}>Bubble rate</span>
-                    <span style={{ color: "var(--color-text-secondary)" }}>{co2State.bubbleRate} bps</span>
-                  </div>
-                )}
-                {co2State.dropChecker && DROP_CHECKER_MAP[co2State.dropChecker] && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>
-                    <span style={{ color: "var(--color-text-subtle)" }}>Drop checker</span>
-                    <span style={{ color: DROP_CHECKER_MAP[co2State.dropChecker].color, fontWeight: 500 }}>
-                      {DROP_CHECKER_MAP[co2State.dropChecker].label.split(" — ")[0]}
-                    </span>
-                  </div>
-                )}
-                {co2State.timerHours && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'DM Sans', sans-serif" }}>
-                    <span style={{ color: "var(--color-text-subtle)" }}>Timer</span>
-                    <span style={{ color: "var(--color-text-secondary)" }}>
-                      {co2State.timerHours}h/day{co2State.timerStart ? ` · ${co2State.timerStart}–${co2State.timerStop || "?"}` : ""}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ fontSize: "12px", color: "var(--color-text-faint)", fontFamily: "'DM Sans', sans-serif", marginTop: "6px" }}>No CO₂ data yet</div>
-            )}
-          </div>
-
-          {medOpen.length > 0 && (
-            <div style={{ background: "var(--color-medical-bg)", border: "1px solid var(--color-error-border)", borderRadius: "10px", padding: "12px 14px", marginBottom: "12px", animation: "fadeIn 0.3s ease" }}>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-error-text)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "6px" }}>✚ In treatment</div>
-              {medOpen.map(e => (
-                <div key={e.id} style={{ fontSize: "12px", color: "var(--color-medical-text)", fontFamily: "'DM Sans', sans-serif", marginBottom: "2px" }}>
-                  {e.data.fish}{e.data.count && e.data.count !== "1" ? ` × ${e.data.count}` : ""}
-                  <span style={{ color: "var(--color-error-border)", marginLeft: "4px" }}>— {e.data.symptoms || "treatment ongoing"}</span>
-                </div>
-              ))}
-            </div>
-          )}
 
           <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)", borderRadius: "12px", padding: "18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>

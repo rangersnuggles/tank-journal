@@ -10,7 +10,9 @@ An open source freshwater aquarium journal. Track water parameters, inhabitants,
 - Inhabitants sidebar that auto-syncs from your entries
 - Fish, invertebrate and plant name autocomplete (your tank, your past names, and a species catalog)
 - Maintenance reminders ("water change every 6 weeks") that reset when you log the task, with an optional daily email digest
-- Public read-only tank pages at `/t/:username/:slug`
+- Water parameter trend charts and an at-a-glance status strip (latest readings, CO₂, treatments)
+- Public read-only tank pages at `/t/:username/:slug`, with link previews and a sitemap
+- Account settings, full data export (JSON/CSV), and self-serve account deletion
 - Dark mode
 - Password reset via email
 

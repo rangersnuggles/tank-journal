@@ -5,7 +5,9 @@
  * last tested and changed, current CO₂ state, and anything in treatment.
  *
  * Lives in the journal column rather than the sidebar so the sidebar can stay short
- * (reminders + inhabitants) at laptop widths. Renders nothing for an empty tank.
+ * (reminders + inhabitants) at laptop widths. Each row only appears when it has something
+ * worth showing: Water needs a test in the last FRESH_DAYS, CO₂ only shows while it's on.
+ * With nothing to show, it renders nothing.
  */
 import { useEffect, useMemo, useState } from "react";
 import { PARAM_META, readingsFor, rangeStatus, formatTypical } from "@/lib/params";
@@ -14,6 +16,9 @@ import { diffDays, fmtAgo } from "@/lib/reminders/dates";
 import { lastDoneFromEntries } from "@/lib/reminders/match";
 
 const sans = "'DM Sans', sans-serif";
+
+// Readings older than this aren't "current" — the tile is dropped (still in Trends/journal).
+const FRESH_DAYS = 60;
 
 function trend(latest, prev) {
   if (!prev) return null;
@@ -33,19 +38,26 @@ export default function TankGlance({ entries, co2State, dropChecker, medOpen = [
   const [today, setToday] = useState(null);
   useEffect(() => { setToday(localDateStr()); }, []);
 
+  // Which tiles to show is decided against the UTC date so server and client agree;
+  // only the displayed "N days ago" text uses the viewer's local date.
+  const utcToday = new Date().toISOString().slice(0, 10);
+
   const rows = useMemo(() => PARAM_META.map((m) => {
     const rs = readingsFor(entries, m.key);
     if (!rs.length) return null;
+    if (diffDays(utcToday, rs[rs.length - 1].entry.date) > FRESH_DAYS) return null;
     const latest = rs[rs.length - 1];
     const prev = rs[rs.length - 2];
     return { meta: m, latest, prev, days: today ? diffDays(today, latest.entry.date) : null, trend: trend(latest, prev), status: rangeStatus(m.key, latest) };
-  }).filter(Boolean), [entries, today]);
+  }).filter(Boolean), [entries, today, utcToday]);
 
   const lastChange = useMemo(() => lastDoneFromEntries(entries).water_change, [entries]);
   const newestDays = today && rows.length ? Math.min(...rows.map((r) => r.days)) : null;
-  const hasCo2 = !!(co2State && (co2State.status || co2State.bubbleRate || co2State.dropChecker || co2State.timerHours));
+  const hasWater = rows.length > 0;
+  const hasTrends = rows.some((r) => r.prev);
+  const hasCo2 = co2State?.status === "on";
 
-  if (!rows.length && !lastChange && !hasCo2 && !medOpen.length) return null;
+  if (!hasWater && !hasCo2 && !medOpen.length) return null;
 
   const water = [
     newestDays != null ? `tested ${fmtAgo(newestDays)}` : null,
@@ -54,21 +66,20 @@ export default function TankGlance({ entries, co2State, dropChecker, medOpen = [
 
   return (
     <section aria-label="Tank at a glance" style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)", borderRadius: "12px", marginBottom: "22px", overflow: "hidden" }}>
-      {(rows.length > 0 || lastChange) && (
+      {hasWater && (
         <div style={{ padding: "12px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", marginBottom: rows.length ? "10px" : 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", marginBottom: "10px" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
               <h2 style={rowLabel}>Water</h2>
               {water && <span style={meta}>{water}</span>}
             </div>
-            {onShowTrends && rows.length > 0 && (
+            {onShowTrends && hasTrends && (
               <button type="button" onClick={onShowTrends} style={{ background: "none", border: "none", padding: "2px 0", cursor: "pointer", fontFamily: sans, fontSize: "11px", color: "var(--color-accent)", whiteSpace: "nowrap" }}>
                 Trends →
               </button>
             )}
           </div>
 
-          {rows.length > 0 && (
             <dl style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "6px", fontFamily: sans }}>
               {rows.map(({ meta: m, latest, prev, days, trend: tr, status }) => {
                 const unit = m.unit && !/[a-z°]/i.test(latest.raw) ? m.unit : "";
@@ -97,12 +108,11 @@ export default function TankGlance({ entries, co2State, dropChecker, medOpen = [
                 );
               })}
             </dl>
-          )}
         </div>
       )}
 
       {hasCo2 && (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px 14px", flexWrap: "wrap", padding: "9px 16px", borderTop: rows.length || lastChange ? "1px solid var(--color-border-subtle)" : "none", fontFamily: sans, fontSize: "12px", color: "var(--color-text-secondary)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px 14px", flexWrap: "wrap", padding: "9px 16px", borderTop: hasWater ? "1px solid var(--color-border-subtle)" : "none", fontFamily: sans, fontSize: "12px", color: "var(--color-text-secondary)" }}>
           <h2 style={rowLabel}>CO₂</h2>
           {co2State.status && (
             <span style={{
@@ -129,7 +139,7 @@ export default function TankGlance({ entries, co2State, dropChecker, medOpen = [
       )}
 
       {medOpen.length > 0 && (
-        <div style={{ display: "flex", alignItems: "baseline", gap: "4px 10px", flexWrap: "wrap", padding: "9px 16px", background: "var(--color-medical-bg)", borderTop: "1px solid var(--color-error-border)", fontFamily: sans, fontSize: "12px" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "4px 10px", flexWrap: "wrap", padding: "9px 16px", background: "var(--color-medical-bg)", borderTop: hasWater || hasCo2 ? "1px solid var(--color-error-border)" : "none", fontFamily: sans, fontSize: "12px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--color-error-text)", letterSpacing: "0.05em", textTransform: "uppercase" }}>✚ In treatment</span>
           {medOpen.map((e) => (
             <span key={e.id} style={{ color: "var(--color-medical-text)" }}>

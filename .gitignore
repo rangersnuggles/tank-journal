@@ -36,3 +36,6 @@ yarn-error.log*
 next-env.d.ts
 .wrangler/
 .gstack/
+
+# Playwright MCP browser session output (snapshots, screenshots, console logs)
+.playwright-mcp/

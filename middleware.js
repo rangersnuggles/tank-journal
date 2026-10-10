@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-touch-icon.png).*)"],
 };
 
 // "/r/" + "/unsubscribe" + "/api/email/": signed-token reminder email links (no session needed).

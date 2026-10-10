@@ -236,8 +236,8 @@ function NotificationsSection() {
         textDecoration: "none", background: "var(--color-bg)",
       }}>
         <span>
-          <span style={{ display: "block", fontSize: "14px", color: "var(--color-text-primary)" }}>Email notifications</span>
-          <span style={{ display: "block", fontSize: "12px", color: "var(--color-text-muted)", marginTop: "2px" }}>Choose which reminders and updates we email you.</span>
+          <span style={{ display: "block", fontSize: "14px", color: "var(--color-text-primary)" }}>Email &amp; calendar</span>
+          <span style={{ display: "block", fontSize: "12px", color: "var(--color-text-muted)", marginTop: "2px" }}>Reminder emails and your private calendar link.</span>
         </span>
         <span aria-hidden style={{ color: "var(--color-accent)", fontSize: "16px" }}>→</span>
       </Link>

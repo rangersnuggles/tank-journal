@@ -251,7 +251,7 @@ function ReminderRow({ r, today, onDone, onSnooze, onEdit, onDelete, busy }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingLeft: "25px", marginTop: "1px" }}>
         <span style={{ flex: 1, minWidth: 0, fontSize: "10px", color: "var(--color-text-subtle)", fontFamily: sans, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={subTitle}>{sub}</span>
-        <button type="button" onClick={() => setMode(mode ? null : "menu")} aria-expanded={!!mode} aria-label={`More actions for ${title}`} title="Snooze, edit or delete" style={{
+        <button type="button" onClick={() => setMode(mode ? null : "menu")} aria-expanded={!!mode} aria-label={`More actions for ${title}`} title="Snooze, add to calendar, edit or delete" style={{
           background: "none", border: "none", padding: "0 2px", cursor: "pointer", fontSize: "13px", lineHeight: 1,
           color: mode ? "var(--color-text-secondary)" : "var(--color-text-faint)", fontFamily: sans,
         }}>⋯</button>
@@ -270,6 +270,11 @@ function ReminderRow({ r, today, onDone, onSnooze, onEdit, onDelete, busy }) {
               {!paused && [1, 3, 7].map((d) => (
                 <button key={d} type="button" disabled={busy} onClick={() => { setMode(null); onSnooze(r, d); }} style={smallBtn}>{d}d</button>
               ))}
+              {!paused && (
+                <a href={`/api/reminders/${r.id}/ics`} download data-testid="reminder-ics" title="Download an .ics event for the next due date"
+                  onClick={() => posthog.capture("reminder_ics_downloaded", { task_type: r.task_type })}
+                  style={{ ...smallBtn, textDecoration: "none", display: "inline-block" }}>Add to calendar</a>
+              )}
               <button type="button" onClick={() => { setMode(null); onEdit(r); }} style={smallBtn}>Edit</button>
               <button type="button" onClick={() => setMode("delete")} style={{ ...smallBtn, color: "var(--color-error-text)" }}>Delete</button>
             </>
@@ -430,7 +435,7 @@ export default function RemindersCard({ tankId, entries = [], resetEvent = null,
       </div>
 
       <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid var(--color-border-subtle)", fontSize: "10px", color: "var(--color-text-faint)", fontFamily: sans, lineHeight: 1.5 }}>
-        Private to you. <Link href="/account/notifications" style={{ color: "var(--color-text-subtle)" }}>Email settings</Link>
+        Private to you. <Link href="/account/notifications" style={{ color: "var(--color-text-subtle)" }}>Email &amp; calendar</Link>
       </div>
 
       <style>{`

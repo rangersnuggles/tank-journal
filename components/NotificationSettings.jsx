@@ -23,7 +23,7 @@ function browserTimeZone() {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
 }
 
-export default function NotificationSettings({ initial, email }) {
+export default function NotificationSettings({ initial, email, children }) {
   const [enabled, setEnabled] = useState(!!initial.reminders_email);
   const [hour, setHour] = useState(initial.digest_hour);
   // No saved settings yet → prefill the browser's timezone.
@@ -83,7 +83,7 @@ export default function NotificationSettings({ initial, email }) {
   return (
     <div style={{ maxWidth: "560px", margin: "0 auto", padding: "48px 24px 80px", fontFamily: sans }}>
       <Link href="/dashboard" style={{ fontSize: "12px", color: "var(--color-text-subtle)", textDecoration: "none" }}>← Dashboard</Link>
-      <h1 style={{ fontFamily: serif, fontSize: "26px", fontWeight: 400, color: "var(--color-text-primary)", margin: "16px 0 4px", letterSpacing: "-0.02em" }}>Email reminders</h1>
+      <h1 style={{ fontFamily: serif, fontSize: "26px", fontWeight: 400, color: "var(--color-text-primary)", margin: "16px 0 4px", letterSpacing: "-0.02em" }}>Email &amp; calendar</h1>
       <p style={{ fontSize: "13px", color: "var(--color-text-muted)", margin: "0 0 28px", lineHeight: 1.6 }}>
         One email a day at most, only when a reminder is due — grouped by tank, with Done and Snooze links.
         Overdue reminders are re-sent after 3 and 6 days, then we stop emailing about them.
@@ -131,6 +131,8 @@ export default function NotificationSettings({ initial, email }) {
           )}
         </div>
       </form>
+
+      {children}
     </div>
   );
 }
